@@ -1,0 +1,213 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+use App\Helpers\AuthHelper;
+use App\Helpers\Security;
+use App\Models\Category;
+use App\Models\Product;
+
+class ProductController extends Controller
+{
+    public function index(): void
+    {
+        AuthHelper::requireAuth();
+        $products = Product::all(true);
+        $this->view('products/index', [
+            'title' => 'المنتجات',
+            'products' => $products,
+            'csrfToken' => Security::generateCsrfToken(),
+        ]);
+    }
+
+    public function create(): void
+    {
+        AuthHelper::requireAuth();
+        $categories = Category::all();
+        $this->view('products/form', [
+            'title' => 'إضافة منتج',
+            'product' => null,
+            'categories' => $categories,
+            'csrfToken' => Security::generateCsrfToken(),
+        ]);
+    }
+
+    public function store(): void
+    {
+        AuthHelper::requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Method not allowed'], 405);
+        }
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $csrf = $input['csrf_token'] ?? '';
+        if (!Security::validateCsrfToken($csrf)) {
+            $this->jsonResponse(['error' => 'Invalid CSRF token'], 403);
+        }
+        $name = trim($input['name'] ?? '');
+        if ($name === '') {
+            $this->jsonResponse(['error' => 'Product name is required'], 400);
+        }
+        $name = Security::sanitizeString($name);
+        $data = [
+            'name' => $name,
+            'category_id' => $input['category_id'] ?? null,
+            'sku' => isset($input['sku']) ? Security::sanitizeString($input['sku']) : null,
+            'price' => (float) ($input['price'] ?? 0),
+            'cost' => (float) ($input['cost'] ?? 0),
+            'quantity' => (int) ($input['quantity'] ?? 0),
+            'low_stock_threshold' => (int) ($input['low_stock_threshold'] ?? 5),
+        ];
+        $id = Product::create($data);
+        $this->jsonResponse(['success' => true, 'id' => $id, 'redirect' => '/products'], 201);
+    }
+
+    public function edit(): void
+    {
+        AuthHelper::requireAuth();
+        $id = (int) ($_GET['id'] ?? 0);
+        $product = $id ? Product::find($id) : null;
+        if (!$product) {
+            http_response_code(404);
+            require BASE_PATH . '/views/404.php';
+            return;
+        }
+        $categories = Category::all();
+        $this->view('products/form', [
+            'title' => 'تعديل المنتج',
+            'product' => $product,
+            'categories' => $categories,
+            'csrfToken' => Security::generateCsrfToken(),
+        ]);
+    }
+
+    public function update(): void
+    {
+        AuthHelper::requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Method not allowed'], 405);
+        }
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        if (!Security::validateCsrfToken($input['csrf_token'] ?? '')) {
+            $this->jsonResponse(['error' => 'Invalid CSRF token'], 403);
+        }
+        $id = (int) ($input['id'] ?? 0);
+        $product = $id ? Product::find($id) : null;
+        if (!$product) {
+            $this->jsonResponse(['error' => 'Product not found'], 404);
+        }
+        $name = trim($input['name'] ?? '');
+        if ($name === '') {
+            $this->jsonResponse(['error' => 'Product name is required'], 400);
+        }
+        $data = [
+            'name' => Security::sanitizeString($name),
+            'category_id' => $input['category_id'] ?? null,
+            'sku' => isset($input['sku']) ? Security::sanitizeString($input['sku']) : null,
+            'price' => (float) ($input['price'] ?? 0),
+            'cost' => (float) ($input['cost'] ?? 0),
+            'quantity' => (int) ($input['quantity'] ?? 0),
+            'low_stock_threshold' => (int) ($input['low_stock_threshold'] ?? 5),
+        ];
+        Product::update($id, $data);
+        $this->jsonResponse(['success' => true, 'redirect' => '/products']);
+    }
+
+    public function delete(): void
+    {
+        AuthHelper::requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Method not allowed'], 405);
+        }
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        if (!Security::validateCsrfToken($input['csrf_token'] ?? '')) {
+            $this->jsonResponse(['error' => 'Invalid CSRF token'], 403);
+        }
+        $id = (int) ($input['id'] ?? 0);
+        if (!$id) {
+            $this->jsonResponse(['error' => 'Invalid ID'], 400);
+        }
+        Product::delete($id);
+        $this->jsonResponse(['success' => true]);
+    }
+
+    /** GET /api/products/barcode?sku=xxx — find product by SKU/barcode for scanner. */
+    public function barcode(): void
+    {
+        AuthHelper::requireAuth();
+        $sku = trim((string) ($_GET['sku'] ?? ''));
+        if ($sku === '') {
+            $this->jsonResponse(['error' => 'الرمز مطلوب'], 400);
+        }
+        $product = Product::findBySku($sku);
+        if (!$product) {
+            $this->jsonResponse(['error' => 'لم يُعثر على منتج بهذا الرمز'], 404);
+        }
+        $this->jsonResponse(['success' => true, 'product' => $product]);
+    }
+
+    /** GET /barcode-scan — صفحة مخصّصة للجوال: مسح الباركود وإرساله للحاسوب. */
+    public function barcodeScanPage(): void
+    {
+        AuthHelper::requireAuth();
+        $this->view('barcode/scan', [
+            'title'     => 'مسح الباركود وإرسال للحاسوب',
+            'csrfToken' => Security::generateCsrfToken(),
+        ]);
+    }
+
+    /**
+     * POST /api/barcode-push — من الجوال: إرسال الباركود الممسوح إلى الحاسوب (ربط بالكابل/شبكة).
+     */
+    public function barcodePush(): void
+    {
+        AuthHelper::requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Method not allowed'], 405);
+        }
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $code  = trim((string) ($input['barcode'] ?? $input['code'] ?? ''));
+        if ($code === '') {
+            $this->jsonResponse(['error' => 'الرمز مطلوب'], 400);
+        }
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        if ($userId < 1) {
+            $this->jsonResponse(['error' => 'يجب تسجيل الدخول'], 401);
+        }
+        $dir = BASE_PATH . '/storage/barcode_bridge';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $file = $dir . '/' . $userId . '.json';
+        $data = ['barcode' => $code, 'time' => time()];
+        if (@file_put_contents($file, json_encode($data)) === false) {
+            $this->jsonResponse(['error' => 'فشل حفظ الرمز'], 500);
+        }
+        $this->jsonResponse(['success' => true, 'message' => 'تم إرسال الرمز إلى الحاسوب']);
+    }
+
+    /**
+     * GET /api/barcode-last — من الحاسوب: استلام آخر باركود أرسله الجوال (يُستهلك مرة واحدة).
+     */
+    public function barcodeLast(): void
+    {
+        AuthHelper::requireAuth();
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        if ($userId < 1) {
+            $this->jsonResponse(['barcode' => null]);
+        }
+        $file = BASE_PATH . '/storage/barcode_bridge/' . $userId . '.json';
+        if (!is_file($file)) {
+            $this->jsonResponse(['barcode' => null]);
+        }
+        $raw = @file_get_contents($file);
+        @unlink($file);
+        $data = $raw ? json_decode($raw, true) : null;
+        $barcode = isset($data['barcode']) ? trim((string) $data['barcode']) : null;
+        if ($barcode === '' || $barcode === null) {
+            $this->jsonResponse(['barcode' => null]);
+        }
+        $this->jsonResponse(['barcode' => $barcode, 'time' => (int) ($data['time'] ?? 0)]);
+    }
+}

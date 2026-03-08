@@ -1,0 +1,31 @@
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Optional: مجلد السكيلز (ضخم) — احذف هذا السطر إن أردت رفعه
+skills/
+
+# PHP
+vendor/
+composer.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+storage/logs/
+storage/barcode_bridge/*.json
+*.log
+
+# Keep storage structure (schema and patches are committed)
+!storage/schema.sql
+!storage/patch_sales_table.sql
