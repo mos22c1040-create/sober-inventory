@@ -1,31 +1,62 @@
-# Environment & secrets
+# =============================
+# PHP / MySQL project .gitignore
+# =============================
+
+# ---- Environment & secrets ----
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+*.env
 
-# Optional: مجلد السكيلز (ضخم) — احذف هذا السطر إن أردت رفعه
-skills/
-
-# PHP
+# ---- PHP ----
 vendor/
 composer.lock
+composer.phar
+.phpunit.result.cache
+phpunit.xml
+.php-cs-fixer.cache
 
-# IDE
+# ---- Dependencies (if added later) ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---- Storage & runtime ----
+storage/logs/
+storage/barcode_bridge/*.json
+storage/cache/
+storage/sessions/
+storage/uploads/
+*.log
+
+# Keep required storage files
+!storage/schema.sql
+!storage/patch_sales_table.sql
+!storage/.gitkeep
+
+# ---- IDE & editors ----
 .idea/
 .vscode/
+*.sublime-project
+*.sublime-workspace
 *.swp
 *.swo
 *~
 
-# OS
+# ---- OS ----
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Logs & temp
-storage/logs/
-storage/barcode_bridge/*.json
-*.log
+# ---- Build & deploy ----
+dist/
+build/
+*.tar
+*.zip
+.deploy/
 
-# Keep storage structure (schema and patches are committed)
-!storage/schema.sql
-!storage/patch_sales_table.sql
+# ---- Optional: exclude large/sensitive dirs ----
+skills/
