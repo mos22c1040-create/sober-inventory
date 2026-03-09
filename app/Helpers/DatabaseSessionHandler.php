@@ -49,13 +49,16 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
         try {
             $db = Database::getInstance();
             $conn = $db->getConnection();
-            $conn->prepare(
-                'REPLACE INTO ' . self::TABLE . ' (id, payload, last_activity) VALUES (:id, :payload, :la)'
-            )->execute([
-                ':id'      => $id,
-                ':payload' => $data,
-                ':la'      => time(),
-            ]);
+            $la = time();
+            if ($db->getDriver() === 'pgsql') {
+                $conn->prepare(
+                    'INSERT INTO ' . self::TABLE . ' (id, payload, last_activity) VALUES (:id, :payload, :la) ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, last_activity = EXCLUDED.last_activity'
+                )->execute([':id' => $id, ':payload' => $data, ':la' => $la]);
+            } else {
+                $conn->prepare(
+                    'REPLACE INTO ' . self::TABLE . ' (id, payload, last_activity) VALUES (:id, :payload, :la)'
+                )->execute([':id' => $id, ':payload' => $data, ':la' => $la]);
+            }
             return true;
         } catch (\Throwable $e) {
             return false;

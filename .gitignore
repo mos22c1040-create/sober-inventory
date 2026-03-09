@@ -62,3 +62,8 @@ build/
 
 # ---- Optional: exclude large/sensitive dirs ----
 skills/
+
+# ---- Temporary fix/patch scripts (dev only) ----
+storage/fix_*.php
+storage/fix_*.py
+storage/check_*.php

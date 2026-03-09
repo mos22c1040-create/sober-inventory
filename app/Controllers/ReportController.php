@@ -24,12 +24,21 @@ class ReportController extends Controller
     {
         AuthHelper::requireAuth();
         $db = Database::getInstance();
-        $salesByDay = $db->query(
-            "SELECT DATE(created_at) AS day, SUM(total) AS total, COUNT(*) AS count FROM sales WHERE status = 'paid' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(created_at) ORDER BY day DESC"
-        )->fetchAll();
-        $topProducts = $db->query(
-            "SELECT p.name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 10"
-        )->fetchAll();
+        $isPgsql = $db->getDriver() === 'pgsql';
+        $salesByDay = $isPgsql
+            ? $db->query(
+                "SELECT (s.created_at::date) AS day, SUM(s.total) AS total, COUNT(*) AS count FROM sales s WHERE s.status = 'paid' AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days') GROUP BY (s.created_at::date) ORDER BY day DESC"
+            )->fetchAll()
+            : $db->query(
+                "SELECT DATE(created_at) AS day, SUM(total) AS total, COUNT(*) AS count FROM sales WHERE status = 'paid' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(created_at) ORDER BY day DESC"
+            )->fetchAll();
+        $topProducts = $isPgsql
+            ? $db->query(
+                "SELECT p.name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days') GROUP BY si.product_id, p.name ORDER BY qty_sold DESC LIMIT 10"
+            )->fetchAll()
+            : $db->query(
+                "SELECT p.name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 10"
+            )->fetchAll();
         $this->view('reports/index', [
             'title' => 'التقارير',
             'salesByDay' => $salesByDay,
@@ -42,9 +51,10 @@ class ReportController extends Controller
     {
         AuthHelper::requireAuth();
         $db = Database::getInstance();
-        $rows = $db->query(
-            "SELECT DATE(created_at) AS day, SUM(total) AS total, COUNT(*) AS count FROM sales WHERE status = 'paid' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(created_at) ORDER BY day ASC"
-        )->fetchAll();
+        $isPgsql = $db->getDriver() === 'pgsql';
+        $rows = $isPgsql
+            ? $db->query("SELECT (created_at::date) AS day, SUM(total) AS total, COUNT(*) AS count FROM sales WHERE status = 'paid' AND created_at >= (CURRENT_DATE - INTERVAL '30 days') GROUP BY (created_at::date) ORDER BY day ASC")->fetchAll()
+            : $db->query("SELECT DATE(created_at) AS day, SUM(total) AS total, COUNT(*) AS count FROM sales WHERE status = 'paid' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(created_at) ORDER BY day ASC")->fetchAll();
 
         $filename = 'sales_report_' . date('Y-m-d') . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
@@ -65,9 +75,10 @@ class ReportController extends Controller
     {
         AuthHelper::requireAuth();
         $db = Database::getInstance();
-        $rows = $db->query(
-            "SELECT p.name AS product_name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 100"
-        )->fetchAll();
+        $isPgsql = $db->getDriver() === 'pgsql';
+        $rows = $isPgsql
+            ? $db->query("SELECT p.name AS product_name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days') GROUP BY si.product_id, p.name ORDER BY qty_sold DESC LIMIT 100")->fetchAll()
+            : $db->query("SELECT p.name AS product_name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 100")->fetchAll();
 
         $filename = 'top_products_' . date('Y-m-d') . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');

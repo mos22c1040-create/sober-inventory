@@ -102,7 +102,10 @@ class Sale
     public static function todayTotal(): float
     {
         $db = Database::getInstance();
-        $stmt = $db->query("SELECT COALESCE(SUM(total), 0) AS total FROM sales WHERE DATE(created_at) = CURDATE() AND status = 'paid'");
+        $sql = $db->getDriver() === 'pgsql'
+            ? "SELECT COALESCE(SUM(total), 0) AS total FROM sales WHERE (created_at::date) = CURRENT_DATE AND status = 'paid'"
+            : "SELECT COALESCE(SUM(total), 0) AS total FROM sales WHERE DATE(created_at) = CURDATE() AND status = 'paid'";
+        $stmt = $db->query($sql);
         $row = $stmt->fetch();
         return (float) ($row['total'] ?? 0);
     }
@@ -110,7 +113,10 @@ class Sale
     public static function todayCount(): int
     {
         $db = Database::getInstance();
-        $stmt = $db->query("SELECT COUNT(*) AS cnt FROM sales WHERE DATE(created_at) = CURDATE() AND status = 'paid'");
+        $sql = $db->getDriver() === 'pgsql'
+            ? "SELECT COUNT(*) AS cnt FROM sales WHERE (created_at::date) = CURRENT_DATE AND status = 'paid'"
+            : "SELECT COUNT(*) AS cnt FROM sales WHERE DATE(created_at) = CURDATE() AND status = 'paid'";
+        $stmt = $db->query($sql);
         $row = $stmt->fetch();
         return (int) ($row['cnt'] ?? 0);
     }
@@ -124,14 +130,25 @@ class Sale
     public static function getDailyTotalsLastDays(int $days = 7): array
     {
         $db = Database::getInstance();
-        $stmt = $db->query(
-            "SELECT DATE(created_at) AS d, COALESCE(SUM(total), 0) AS total
-               FROM sales
-              WHERE status = 'paid'
-                AND created_at >= DATE_SUB(CURDATE(), INTERVAL " . (int) $days . " DAY)
-              GROUP BY DATE(created_at)
-              ORDER BY d ASC"
-        );
+        $days = (int) $days;
+        if ($db->getDriver() === 'pgsql') {
+            $sql = "SELECT (created_at::date) AS d, COALESCE(SUM(total), 0) AS total
+                      FROM sales
+                     WHERE status = 'paid'
+                       AND created_at >= (CURRENT_DATE - INTERVAL '1 day' * :days)
+                     GROUP BY (created_at::date)
+                     ORDER BY d ASC";
+            $stmt = $db->query($sql, [':days' => $days]);
+        } else {
+            $stmt = $db->query(
+                "SELECT DATE(created_at) AS d, COALESCE(SUM(total), 0) AS total
+                   FROM sales
+                  WHERE status = 'paid'
+                    AND created_at >= DATE_SUB(CURDATE(), INTERVAL {$days} DAY)
+                  GROUP BY DATE(created_at)
+                  ORDER BY d ASC"
+            );
+        }
         $rows = $stmt->fetchAll();
         $out  = [];
         foreach ($rows as $r) {
