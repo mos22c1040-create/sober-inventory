@@ -1,10 +1,19 @@
 <?php require BASE_PATH . '/views/layouts/header.php'; ?>
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
 
+<nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+    <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
+    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
+    <span class="text-slate-700 font-medium">التصنيفات</span>
+</nav>
+
 <div class="flex justify-between items-center mb-6">
-    <h3 class="text-lg font-bold text-slate-800">التصنيفات</h3>
-    <a href="/categories/create" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium shadow-md">
-        <i class="fa-solid fa-plus ms-2"></i> إضافة تصنيف
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">التصنيفات</h1>
+        <p class="text-sm text-slate-500 mt-1">تنظيم المنتجات حسب التصنيف</p>
+    </div>
+    <a href="/categories/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium shadow-md btn-primary focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 cursor-pointer">
+        <i class="fa-solid fa-plus ms-2" aria-hidden="true"></i> إضافة تصنيف
     </a>
 </div>
 
@@ -24,7 +33,7 @@
                 <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">لا توجد تصنيفات بعد. <a href="/categories/create" class="text-blue-600 hover:underline">أضف تصنيفاً</a>.</td></tr>
                 <?php else: ?>
                 <?php foreach ($categories as $c): ?>
-                <tr class="hover:bg-gray-50">
+                <tr class="table-row-hover transition-colors duration-200">
                     <td class="px-6 py-4 text-sm font-medium text-slate-800"><?= htmlspecialchars($c['name'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($c['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($c['description'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>

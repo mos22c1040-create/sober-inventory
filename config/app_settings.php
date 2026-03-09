@@ -1,20 +1,29 @@
 <?php
 
 // config/app_settings.php - System Wide Configuration Parameters
+// User-editable values (app_name, currency_symbol) can be overridden via storage/settings.json
 
-return [
-    'app_name'     => 'Modern Inventory POS',
-    'app_version'  => '1.0.0',
-    'environment'  => $_ENV['APP_ENV'] ?? 'development',
-    
-    // Core formatting rules
-    'currency_symbol' => '$', // Configurable (You mentioned using Iraqi Dinar in older projects, e.g., 'ألف')
-    'tax_rate'        => 0.15, // 15% Tax Default
-    'timezone'        => 'Asia/Baghdad',
-    
-    // System Features limiters
+$basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
+$defaults = [
+    'app_name'          => 'نظام المخزون',
+    'app_version'       => '1.0.0',
+    'environment'       => $_ENV['APP_ENV'] ?? 'development',
+    'currency_symbol'   => 'د.ع',
+    'tax_rate'          => 0.15,
+    'timezone'          => 'Asia/Baghdad',
     'low_stock_threshold' => 10,
-    
-    // Auth settings
-    'session_lifetime' => 3600 // 1 Hour
+    'session_lifetime'  => 3600,
 ];
+
+$customFile = $basePath . '/storage/settings.json';
+if (is_file($customFile)) {
+    $json = @file_get_contents($customFile);
+    if ($json !== false) {
+        $overrides = json_decode($json, true);
+        if (is_array($overrides)) {
+            $defaults = array_merge($defaults, $overrides);
+        }
+    }
+}
+
+return $defaults;

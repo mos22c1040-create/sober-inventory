@@ -106,4 +106,30 @@ CREATE TABLE IF NOT EXISTS `purchase_items` (
   CONSTRAINT `purchase_items_product_fk` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Activity log (audit trail)
+CREATE TABLE IF NOT EXISTS `activity_log` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned DEFAULT NULL,
+  `action` varchar(80) NOT NULL,
+  `entity_type` varchar(50) DEFAULT NULL,
+  `entity_id` int unsigned DEFAULT NULL,
+  `details` varchar(500) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `action` (`action`),
+  KEY `created_at` (`created_at`),
+  CONSTRAINT `activity_log_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Sessions (for serverless / Vercel — when SESSION_DRIVER=database)
+CREATE TABLE IF NOT EXISTS `sessions` (
+  `id` varchar(128) NOT NULL,
+  `payload` text NOT NULL,
+  `last_activity` int unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `last_activity` (`last_activity`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

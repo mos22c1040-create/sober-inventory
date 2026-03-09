@@ -1,8 +1,16 @@
 <?php require BASE_PATH . '/views/layouts/header.php'; ?>
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
 
+<nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+    <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
+    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
+    <a href="/categories" class="hover:text-blue-600 transition-colors">التصنيفات</a>
+    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
+    <span class="text-slate-700 font-medium"><?= $category ? 'تعديل تصنيف' : 'إضافة تصنيف' ?></span>
+</nav>
+
 <div class="max-w-2xl">
-    <h3 class="text-lg font-bold text-slate-800 mb-6"><?= $category ? 'تعديل التصنيف' : 'إضافة تصنيف' ?></h3>
+    <h1 class="text-2xl font-bold text-slate-800 mb-6"><?= $category ? 'تعديل التصنيف' : 'إضافة تصنيف' ?></h1>
     <form id="category-form" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
         <?php if ($category): ?><input type="hidden" name="id" value="<?= (int)$category['id'] ?>"><?php endif; ?>

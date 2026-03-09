@@ -1,0 +1,19 @@
+# لا ترفع إلى Vercel
+.env
+.env.*
+!.env.example
+storage/logs/*
+storage/barcode_bridge/*
+storage/settings.json
+storage/*.sql
+!storage/schema.sql
+node_modules
+.git
+*.md
+!README.md
+!VERCEL_DEPLOY.md
+run.bat
+storage/run_patch_*.php
+storage/check_line.php
+storage/fix_*.php
+storage/fix_*.py

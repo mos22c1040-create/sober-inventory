@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
 use App\Helpers\Security;
+use App\Models\ActivityLog;
 use App\Models\Product;
 use App\Models\Purchase;
 
@@ -64,6 +65,7 @@ class PurchaseController extends Controller
         }
         $userId = (int) $_SESSION['user_id'];
         $purchaseId = Purchase::create($userId, $validItems, $supplier);
+        ActivityLog::log('purchase.create', 'purchase', $purchaseId, $supplier ?: '—');
         $this->jsonResponse(['success' => true, 'id' => $purchaseId, 'redirect' => '/purchases'], 201);
     }
 }

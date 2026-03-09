@@ -1,16 +1,26 @@
 <?php require BASE_PATH . '/views/layouts/header.php'; ?>
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
+<?php $appSettings = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : []; $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع'; ?>
+
+<nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+    <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
+    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
+    <span class="text-slate-700 font-medium">المنتجات</span>
+</nav>
 
 <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-    <h3 class="text-lg font-bold text-slate-800">جميع المنتجات</h3>
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">المنتجات</h1>
+        <p class="text-sm text-slate-500 mt-1">جميع المنتجات في الكتالوج — بحث بالباركود أو الكاميرا</p>
+    </div>
     <div class="flex flex-wrap items-center gap-3">
         <!-- بحث بالباركود (قارئ USB أو إدخال يدوي) -->
         <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
             <i class="fa-solid fa-barcode text-gray-400 text-lg"></i>
             <input type="text" id="barcode-input" placeholder="امسح الباركود أو اكتب الرمز..." autocomplete="off"
                    class="w-56 border-0 bg-transparent py-1 text-sm outline-none placeholder-gray-400">
-            <button type="button" id="barcode-btn" class="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors" title="بحث بالباركود">
-                <i class="fa-solid fa-magnifying-glass"></i>
+            <button type="button" id="barcode-btn" class="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer" title="بحث بالباركود" aria-label="بحث بالباركود">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
             </button>
         </div>
         <button type="button" id="camera-scan-btn" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium text-slate-700 transition-colors touch-manipulation" title="مسح الباركود من كاميرا الجوال">
@@ -19,8 +29,8 @@
         <a href="/barcode-scan" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-100 hover:bg-blue-200 rounded-xl text-sm font-medium text-blue-800 transition-colors" title="افتح على الجوال (ربط بالكابل/شبكة) وامسح — الرمز يظهر هنا">
             <i class="fa-solid fa-mobile-screen"></i> جوال → حاسوب
         </a>
-        <a href="/products/create" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium shadow-md">
-            <i class="fa-solid fa-plus ms-2"></i> إضافة منتج
+        <a href="/products/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium shadow-md btn-primary focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 cursor-pointer">
+            <i class="fa-solid fa-plus ms-2" aria-hidden="true"></i> إضافة منتج
         </a>
     </div>
 </div>
@@ -47,11 +57,11 @@
                 <?php foreach ($products as $p): 
                     $lowStock = isset($p['low_stock_threshold']) && $p['quantity'] <= $p['low_stock_threshold'] && $p['low_stock_threshold'] > 0;
                 ?>
-                <tr class="hover:bg-gray-50 transition-colors" data-product-id="<?= (int)$p['id'] ?>" data-sku="<?= htmlspecialchars($p['sku'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                <tr class="table-row-hover transition-colors duration-200" data-product-id="<?= (int)$p['id'] ?>" data-sku="<?= htmlspecialchars($p['sku'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <td class="px-6 py-4 text-sm font-medium text-slate-800"><?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($p['sku'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($p['category_name'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
-                    <td class="px-6 py-4 text-sm text-right font-medium text-slate-800">د.ع <?= number_format((float)$p['price'], 0) ?></td>
+                    <td class="px-6 py-4 text-sm text-right font-medium text-slate-800"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$p['price'], 0) ?></td>
                     <td class="px-6 py-4 text-right">
                         <span class="text-sm font-medium <?= $lowStock ? 'text-red-600' : 'text-slate-800' ?>"><?= (int)$p['quantity'] ?></span>
                         <?php if ($lowStock): ?><span class="ms-1 text-xs text-red-500">(منخفض)</span><?php endif; ?>
@@ -87,15 +97,15 @@
 <script>
 const csrfToken = '<?= htmlspecialchars($csrfToken ?? $_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>';
 function deleteProduct(id, name) {
-    if (!confirm('Delete product “‘ + name + '”?')) return;
+    if (!confirm('هل أنت متأكد من حذف المنتج "' + name + '"?\nلا يمكن التراجع عن هذه العملية.')) return;
     fetch('/api/products/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: id, csrf_token: csrfToken })
     }).then(r => r.json()).then(data => {
         if (data.success) location.reload();
-        else alert(data.error || 'Failed to delete');
-    });
+        else alert(data.error || 'حدث خطأ أثناء الحذف');
+    }).catch(function() { alert('خطأ في الاتصال بالخادم'); });
 }
 </script>
 <script>
@@ -128,11 +138,15 @@ function deleteProduct(id, name) {
     }
     if (barcodeInput) barcodeInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); doBarcodeSearch(); } });
     if (barcodeBtn) barcodeBtn.addEventListener('click', function() { doBarcodeSearch(); });
+    var _lastBridgeSku = null;
     setInterval(function() {
         fetch('/api/barcode-last').then(function(r) { return r.json(); }).then(function(data) {
-            if (data.barcode) doBarcodeSearch(data.barcode);
+            if (data && data.barcode && data.barcode !== _lastBridgeSku) {
+                _lastBridgeSku = data.barcode;
+                doBarcodeSearch(data.barcode);
+            }
         }).catch(function() {});
-    }, 600);
+    }, 3000);
     var cameraModal = document.getElementById('camera-modal');
     var cameraClose = document.getElementById('camera-close');
     var cameraScanBtn = document.getElementById('camera-scan-btn');

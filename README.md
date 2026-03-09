@@ -43,6 +43,14 @@ mysql -u root -p -e "CREATE DATABASE inventory_pos CHARACTER SET utf8mb4 COLLATE
 mysql -u root -p inventory_pos < storage/schema.sql
 ```
 
+**جدول سجل النشاط (activity_log):** إذا ظهر خطأ بأن الجدول غير موجود، شغّل من جذر المشروع:
+
+```bash
+php storage/run_patch_activity_log.php
+```
+
+(على ويندوز إذا كان `mysql` غير مضاف في PATH، استخدم الأمر أعلاه بدلاً من `mysql ... < storage/patch_activity_log.sql`.)
+
 ### 3. Environment
 
 Copy the example env file and set your database credentials:
@@ -65,11 +73,15 @@ DB_PASSWORD=your_password
 
 **Option A — PHP built-in server (development):**
 
+Run from the **project root** (so that all routes like `/dashboard`, `/products` work):
+
 ```bash
-cd public && php -S localhost:8000
+php -S localhost:8000 -t public public/index.php
 ```
 
 Then open: **http://localhost:8000**
+
+**ويندوز — تشغيل سريع:** يمكنك النقر المزدوج على `run.bat` في جذر المشروع لبدء السيرفر.
 
 **Option B — Apache/Nginx:**  
 Point the document root to the **`public/`** directory of the project.
@@ -109,34 +121,6 @@ Change the password after first login.
 ├── .gitignore
 └── README.md
 ```
-
----
-
-## Deploy to VPS (GitHub Actions)
-
-The repo includes a workflow that deploys the app to a VPS on every push to `main` (or on manual trigger).
-
-### 1. Configure GitHub Secrets
-
-In your repo: **Settings → Secrets and variables → Actions**, add:
-
-| Secret           | Description                          |
-|------------------|--------------------------------------|
-| `VPS_HOST`       | VPS hostname or IP                   |
-| `VPS_USER`       | SSH user (e.g. `root` or `deploy`)   |
-| `VPS_SSH_KEY`    | Private SSH key for that user        |
-| `VPS_DEPLOY_PATH`| Absolute path on VPS (e.g. `/var/www/sober-inventory`) |
-
-### 2. First-time setup on the VPS
-
-- Install PHP 7.4+, MySQL, and (if using Apache) `mod_rewrite`.
-- Create the app directory, e.g. `mkdir -p /var/www/sober-inventory`.
-- Configure the web server so the **document root** is `.../sober-inventory/public`.
-- Create MySQL database and user; run `storage/schema.sql`; add `.env` with DB credentials.
-- Create `storage/barcode_bridge` and ensure `storage` is writable:  
-  `mkdir -p storage/barcode_bridge && chmod -R 775 storage`
-
-After that, the GitHub Action will deploy code on each push (see `.github/workflows/deploy.yml`).
 
 ---
 

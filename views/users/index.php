@@ -1,11 +1,20 @@
 <?php require BASE_PATH . '/views/layouts/header.php'; ?>
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
 
+<nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+    <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
+    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
+    <span class="text-slate-700 font-medium">المستخدمون</span>
+</nav>
+
 <div class="flex justify-between items-center mb-6">
-    <h3 class="text-lg font-bold text-slate-800">قائمة المستخدمين</h3>
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">المستخدمون</h1>
+        <p class="text-sm text-slate-500 mt-1">إدارة حسابات المديرين والكاشير</p>
+    </div>
     <a href="/users/create"
-       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium shadow-md transition-colors">
-        <i class="fa-solid fa-user-plus ms-2"></i> إضافة مستخدم
+       class="inline-flex items-center min-h-[44px] px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium shadow-md btn-primary focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-colors cursor-pointer">
+        <i class="fa-solid fa-user-plus ms-2" aria-hidden="true"></i> إضافة مستخدم
     </a>
 </div>
 
@@ -40,7 +49,7 @@
                 </tr>
                 <?php else: ?>
                 <?php foreach ($users as $i => $u): ?>
-                <tr class="hover:bg-gray-50 transition-colors" id="row-<?= (int) $u['id'] ?>">
+                <tr class="table-row-hover transition-colors duration-200" id="row-<?= (int) $u['id'] ?>">
                     <td class="px-6 py-4 text-sm text-gray-500"><?= $i + 1 ?></td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">

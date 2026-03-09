@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Tajawal', sans-serif; }
-
+        body { font-family: 'Tajawal', sans-serif; font-size: 16px; line-height: 1.6; }
+        input:focus-visible, button:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
         /* Spinner animation used in the loading state */
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinner {

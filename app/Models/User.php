@@ -124,6 +124,17 @@ class User
     }
 
     /**
+     * Verify that the given password matches the stored hash for user $id.
+     */
+    public static function verifyPasswordFor(int $id, string $password): bool
+    {
+        $db   = Database::getInstance();
+        $stmt = $db->query('SELECT password FROM users WHERE id = :id LIMIT 1', [':id' => $id]);
+        $row  = $stmt->fetch();
+        return $row && Security::verifyPassword($password, (string) $row['password']);
+    }
+
+    /**
      * Change a user's password.
      * Accepts the new plain-text password — hashing done here.
      *

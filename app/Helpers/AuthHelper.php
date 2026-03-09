@@ -129,11 +129,22 @@ class AuthHelper
     {
         if (!self::hasRole($role)) {
             http_response_code(403);
+            $wantsJson = isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false;
+            $isXhr = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+            if ($wantsJson || $isXhr) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'ليس لديك صلاحية الوصول إلى هذا المورد.',
+                    'required_role' => htmlspecialchars($role, ENT_QUOTES, 'UTF-8'),
+                ]);
+                exit;
+            }
+            if (file_exists(BASE_PATH . '/views/403.php')) {
+                require BASE_PATH . '/views/403.php';
+                exit;
+            }
             header('Content-Type: application/json');
-            echo json_encode([
-                'error' => 'ليس لديك صلاحية الوصول إلى هذا المورد.',
-                'required_role' => htmlspecialchars($role, ENT_QUOTES, 'UTF-8'),
-            ]);
+            echo json_encode(['error' => 'ليس لديك صلاحية الوصول إلى هذا المورد.']);
             exit;
         }
     }

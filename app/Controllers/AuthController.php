@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Database;
 use App\Helpers\AuthHelper;
 use App\Helpers\Security;
+use App\Models\ActivityLog;
 
 /**
  * AuthController — handles authentication lifecycle.
@@ -138,6 +139,8 @@ class AuthController extends Controller
         unset($_SESSION['csrf_token']);
         Security::generateCsrfToken();
 
+        ActivityLog::log('login', null, null, (string) $user['email']);
+
         $this->jsonResponse([
             'success'  => true,
             'message'  => 'تم تسجيل الدخول بنجاح.',
@@ -154,6 +157,9 @@ class AuthController extends Controller
      */
     public function logout(): void
     {
+        if (isset($_SESSION['user_id'])) {
+            ActivityLog::log('logout');
+        }
         // Wipe all session data
         $_SESSION = [];
 

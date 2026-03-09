@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
 use App\Helpers\Security;
+use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Product;
 
@@ -60,6 +61,7 @@ class ProductController extends Controller
             'low_stock_threshold' => (int) ($input['low_stock_threshold'] ?? 5),
         ];
         $id = Product::create($data);
+        ActivityLog::log('product.create', 'product', $id, $name);
         $this->jsonResponse(['success' => true, 'id' => $id, 'redirect' => '/products'], 201);
     }
 
@@ -111,6 +113,7 @@ class ProductController extends Controller
             'low_stock_threshold' => (int) ($input['low_stock_threshold'] ?? 5),
         ];
         Product::update($id, $data);
+        ActivityLog::log('product.update', 'product', $id, Security::sanitizeString($name));
         $this->jsonResponse(['success' => true, 'redirect' => '/products']);
     }
 
@@ -128,7 +131,9 @@ class ProductController extends Controller
         if (!$id) {
             $this->jsonResponse(['error' => 'Invalid ID'], 400);
         }
+        $name = Product::find($id)['name'] ?? '';
         Product::delete($id);
+        ActivityLog::log('product.delete', 'product', $id, $name);
         $this->jsonResponse(['success' => true]);
     }
 

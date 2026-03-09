@@ -63,30 +63,39 @@ class Sale
         foreach ($items as $item) {
             $total += (float) $item['total'];
         }
-        $db->query(
-            "INSERT INTO sales (user_id, invoice_number, customer_name, total, payment_method, status) VALUES (:user_id, :invoice_number, :customer_name, :total, :payment_method, 'paid')",
-            [
-                ':user_id' => $userId,
-                ':invoice_number' => $invoiceNumber,
-                ':customer_name' => $customerName,
-                ':total' => $total,
-                ':payment_method' => $paymentMethod,
-            ]
-        );
-        $saleId = (int) $db->getConnection()->lastInsertId();
-        foreach ($items as $item) {
+
+        $db->beginTransaction();
+        try {
             $db->query(
-                "INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total) VALUES (:sale_id, :product_id, :quantity, :unit_price, :total)",
+                "INSERT INTO sales (user_id, invoice_number, customer_name, total, payment_method, status) VALUES (:user_id, :invoice_number, :customer_name, :total, :payment_method, 'paid')",
                 [
-                    ':sale_id' => $saleId,
-                    ':product_id' => $item['product_id'],
-                    ':quantity' => $item['quantity'],
-                    ':unit_price' => $item['unit_price'],
-                    ':total' => $item['total'],
+                    ':user_id'        => $userId,
+                    ':invoice_number' => $invoiceNumber,
+                    ':customer_name'  => $customerName,
+                    ':total'          => $total,
+                    ':payment_method' => $paymentMethod,
                 ]
             );
-            Product::decrementStock((int) $item['product_id'], (int) $item['quantity']);
+            $saleId = $db->lastInsertId();
+            foreach ($items as $item) {
+                $db->query(
+                    "INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total) VALUES (:sale_id, :product_id, :quantity, :unit_price, :total)",
+                    [
+                        ':sale_id'    => $saleId,
+                        ':product_id' => $item['product_id'],
+                        ':quantity'   => $item['quantity'],
+                        ':unit_price' => $item['unit_price'],
+                        ':total'      => $item['total'],
+                    ]
+                );
+                Product::decrementStock((int) $item['product_id'], (int) $item['quantity']);
+            }
+            $db->commit();
+        } catch (\Exception $e) {
+            $db->rollBack();
+            throw $e;
         }
+
         return $saleId;
     }
 
@@ -104,5 +113,30 @@ class Sale
         $stmt = $db->query("SELECT COUNT(*) AS cnt FROM sales WHERE DATE(created_at) = CURDATE() AND status = 'paid'");
         $row = $stmt->fetch();
         return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
+     * إجمالي المبيعات (المدفوعة) لكل يوم لآخر $days يوم.
+     * المفتاح: تاريخ Y-m-d، القيمة: المجموع.
+     *
+     * @return array<string, float>
+     */
+    public static function getDailyTotalsLastDays(int $days = 7): array
+    {
+        $db = Database::getInstance();
+        $stmt = $db->query(
+            "SELECT DATE(created_at) AS d, COALESCE(SUM(total), 0) AS total
+               FROM sales
+              WHERE status = 'paid'
+                AND created_at >= DATE_SUB(CURDATE(), INTERVAL " . (int) $days . " DAY)
+              GROUP BY DATE(created_at)
+              ORDER BY d ASC"
+        );
+        $rows = $stmt->fetchAll();
+        $out  = [];
+        foreach ($rows as $r) {
+            $out[(string) $r['d']] = (float) $r['total'];
+        }
+        return $out;
     }
 }

@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
 use App\Helpers\Security;
+use App\Models\ActivityLog;
 use App\Models\User;
 
 /**
@@ -93,6 +94,7 @@ class UserController extends Controller
 
         $data['password'] = $password;
         $id = User::create($data);
+        ActivityLog::log('user.create', 'user', $id, $data['username']);
 
         $this->jsonResponse([
             'success'  => true,
@@ -170,6 +172,7 @@ class UserController extends Controller
         }
 
         User::update($id, $data);
+        ActivityLog::log('user.update', 'user', $id, $data['username']);
 
         $this->jsonResponse([
             'success'  => true,
@@ -214,6 +217,7 @@ class UserController extends Controller
         }
 
         User::changePassword($id, $password);
+        ActivityLog::log('user.password', 'user', $id);
 
         $this->jsonResponse([
             'success' => true,
@@ -263,7 +267,9 @@ class UserController extends Controller
             ], 409);
         }
 
+        $username = $user['username'] ?? '';
         User::delete($id);
+        ActivityLog::log('user.delete', 'user', $id, $username);
 
         $this->jsonResponse(['success' => true, 'message' => 'تم حذف المستخدم.']);
     }

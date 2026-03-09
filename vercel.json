@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "public/**", "use": "@vercel/static" },
+    { "src": "api/index.php", "use": "vercel-php@0.7.1" }
+  ],
+  "routes": [
+    { "src": "/favicon.ico", "dest": "/public/favicon.ico" },
+    { "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|ico|svg|woff2?))", "dest": "/public/$1" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
+  ],
+  "env": {
+    "APP_ENV": "production"
+  }
+}

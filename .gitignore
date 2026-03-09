@@ -25,7 +25,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # ---- Storage & runtime ----
-storage/logs/
+storage/logs/*
+!storage/logs/.gitkeep
+storage/settings.json
 storage/barcode_bridge/*.json
 storage/cache/
 storage/sessions/

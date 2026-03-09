@@ -20,12 +20,31 @@ class DashboardController extends Controller
         $productCount = 0;
         $lowStockCount = 0;
         $recentSales = [];
+        $dailyTotals = [];
 
         try {
             $todaySales = Sale::todayTotal();
             $todayCount = Sale::todayCount();
             $recentSales = Sale::all(10);
+            $rawDaily   = Sale::getDailyTotalsLastDays(7);
+            $dailyTotals = [];
+            $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            for ($i = 6; $i >= 0; $i--) {
+                $d = date('Y-m-d', strtotime("-$i days"));
+                $total = $rawDaily[$d] ?? 0.0;
+                $dailyTotals[] = [
+                    'date' => $d,
+                    'total' => $total,
+                    'label' => $dayNames[(int) date('w', strtotime($d))],
+                ];
+            }
         } catch (PDOException $e) {
+            $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            $dailyTotals = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $d = date('Y-m-d', strtotime("-$i days"));
+                $dailyTotals[] = ['date' => $d, 'total' => 0.0, 'label' => $dayNames[(int) date('w', strtotime($d))]];
+            }
             // Table or column missing (e.g. run storage/patch_sales_table.sql)
         }
 
@@ -43,6 +62,7 @@ class DashboardController extends Controller
             'productCount' => $productCount,
             'lowStockCount' => $lowStockCount,
             'recentSales' => $recentSales,
+            'dailyTotals' => $dailyTotals ?? [],
         ]);
     }
 }

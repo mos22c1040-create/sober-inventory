@@ -1,8 +1,17 @@
 <?php require BASE_PATH . '/views/layouts/header.php'; ?>
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
+<?php $appSettings = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : []; $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع'; ?>
+
+<nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+    <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
+    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
+    <a href="/purchases" class="hover:text-blue-600 transition-colors">المشتريات</a>
+    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
+    <span class="text-slate-700 font-medium">مشتريات جديدة</span>
+</nav>
 
 <div class="max-w-4xl">
-    <h3 class="text-lg font-bold text-slate-800 mb-6">مشتريات جديدة (إعادة تخزين)</h3>
+    <h1 class="text-2xl font-bold text-slate-800 mb-6">مشتريات جديدة (إعادة تخزين)</h1>
     <form id="purchase-form" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
         <div>
@@ -16,19 +25,19 @@
                     <select name="product_id[]" class="flex-1 rounded-lg border-gray-300 px-3 py-2 border focus:ring-2 focus:ring-blue-500 product-select">
                         <option value="">— اختر منتجًا —</option>
                         <?php foreach ($products as $p): ?>
-                        <option value="<?= (int)$p['id'] ?>" data-price="<?= (float)$p['cost'] ?>"><?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?> (د.ع <?= number_format((float)$p['cost'], 0) ?>)</option>
+                        <option value="<?= (int)$p['id'] ?>" data-price="<?= (float)$p['cost'] ?>"><?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$p['cost'], 0) ?>)</option>
                         <?php endforeach; ?>
                     </select>
                     <input type="number" name="quantity[]" min="1" value="1" placeholder="الكمية" class="w-24 rounded-lg border-gray-300 px-3 py-2 border focus:ring-2 focus:ring-blue-500 qty-input">
                     <input type="number" name="unit_cost[]" step="0.01" min="0" placeholder="سعر الوحدة" class="w-32 rounded-lg border-gray-300 px-3 py-2 border focus:ring-2 focus:ring-blue-500 cost-input">
-                    <span class="line-total font-medium text-slate-800 w-24">د.ع 0</span>
+                    <span class="line-total font-medium text-slate-800 w-24" data-currency="<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> 0</span>
                     <button type="button" class="remove-row text-red-500 hover:text-red-700 px-2">×</button>
                 </div>
             </div>
             <button type="button" id="add-purchase-row" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">+ إضافة بند آخر</button>
         </div>
         <div class="pt-4 flex justify-between items-center border-t border-gray-200">
-            <p class="text-lg font-bold text-slate-800">الإجمالي: <span id="purchase-grand-total">د.ع 0</span></p>
+            <p class="text-lg font-bold text-slate-800">الإجمالي: <span id="purchase-grand-total"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> 0</span></p>
             <div class="flex gap-3">
                 <a href="/purchases" class="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">إلغاء</a>
                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">حفظ المشتريات</button>
@@ -39,6 +48,7 @@
 
 <script>
 (function() {
+    const currencySym = <?= json_encode($currencySymbol, JSON_UNESCAPED_UNICODE) ?>;
     const productOptions = <?= json_encode(array_map(function($p) {
         return ['id' => (int)$p['id'], 'name' => $p['name'], 'cost' => (float)$p['cost']];
     }, $products)) ?>;
@@ -47,7 +57,8 @@
         tpl.querySelector('select').selectedIndex = 0;
         tpl.querySelector('.qty-input').value = 1;
         tpl.querySelector('.cost-input').value = '';
-        tpl.querySelector('.line-total').textContent = 'د.ع 0';
+        tpl.querySelector('.line-total').textContent = currencySym + ' 0';
+        tpl.querySelector('.line-total').removeAttribute('data-currency');
         tpl.querySelectorAll('select option').forEach((o, i) => { if (i === 0) return; const pid = o.value; const prod = productOptions.find(p => p.id == pid); if (prod) o.setAttribute('data-price', prod.cost); });
         document.getElementById('purchase-items').appendChild(tpl);
         bindRow(tpl);
@@ -60,7 +71,7 @@
         function update() {
             const q = parseInt(qty.value, 10) || 0;
             const c = parseFloat(cost.value) || 0;
-            totalSpan.textContent = 'د.ع ' + (q * c).toLocaleString();
+            totalSpan.textContent = currencySym + ' ' + (q * c).toLocaleString();
             updateGrandTotal();
         }
         sel.addEventListener('change', function() {
@@ -80,7 +91,7 @@
             const c = parseFloat(row.querySelector('.cost-input').value) || 0;
             total += q * c;
         });
-        document.getElementById('purchase-grand-total').textContent = 'د.ع ' + total.toLocaleString();
+        document.getElementById('purchase-grand-total').textContent = currencySym + ' ' + total.toLocaleString();
     }
     document.getElementById('add-purchase-row').addEventListener('click', addRow);
     document.querySelectorAll('.purchase-row').forEach(bindRow);
