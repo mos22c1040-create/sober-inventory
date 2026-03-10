@@ -34,7 +34,7 @@ class Database
 
         if ($this->driver === 'pgsql') {
             $dsn = sprintf(
-                'pgsql:host=%s;port=%s;dbname=%s',
+                'pgsql:host=%s;port=%s;dbname=%s;sslmode=require',
                 $config['host'],
                 $config['port'],
                 $config['dbname']
