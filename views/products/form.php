@@ -87,6 +87,15 @@
             skuInput.select();
         });
     }
+    // منع Enter في حقل الباركود من إرسال النموذج (قارئ USB ينهي المسح بـ Enter)
+    if (skuInput) {
+        skuInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+    }
 
     // استقبال باركود من الجوال: تلقائي عند فتح /barcode-scan على الهاتف ومسح
     var lastBridge = '';
@@ -97,10 +106,12 @@
                 lastBridge = data.barcode;
                 skuInput.value = data.barcode;
                 skuInput.focus();
+                skuInput.classList.add('ring-2', 'ring-green-500');
+                setTimeout(function() { skuInput.classList.remove('ring-2', 'ring-green-500'); }, 1500);
             }
         }).catch(function() {});
     }
-    setInterval(pollBarcodeFromMobile, 2000);
+    setInterval(pollBarcodeFromMobile, 1500);
 
     form.onsubmit = async function(e) {
         e.preventDefault();
