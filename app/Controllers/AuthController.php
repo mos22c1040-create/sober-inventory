@@ -56,6 +56,19 @@ class AuthController extends Controller
             $this->jsonResponse(['error' => $message], $code);
         };
 
+        try {
+            $this->loginHandler($sendError);
+        } catch (\Throwable $e) {
+            $isDev = ($_ENV['APP_ENV'] ?? '') !== 'production';
+            $msg   = $isDev && $e->getMessage()
+                ? 'خطأ في الخادم: ' . $e->getMessage()
+                : 'خطأ في الخادم. حاول مرة أخرى لاحقاً.';
+            $sendError($msg, 500);
+        }
+    }
+
+    private function loginHandler(callable $sendError): void
+    {
         // --- Method guard -------------------------------------------------------
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $sendError('طريقة الطلب غير مسموح بها.', 405);
@@ -152,6 +165,7 @@ class AuthController extends Controller
             $sendError($msg, 500);
         }
     }
+
 
     // -------------------------------------------------------------------------
     // POST /api/logout
