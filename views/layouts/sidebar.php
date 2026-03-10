@@ -53,6 +53,7 @@
                 المبيعات
             </a>
 
+            <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
             <div class="my-3 border-t border-slate-700/60"></div>
             <p class="px-3 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">المشتريات</p>
             <a href="/purchases" class="flex items-center px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-xl <?= $nav['purchases'] ? $activeClass : $inactiveClass ?> group transition-all duration-200 focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-[#0f172a] cursor-pointer">
@@ -67,7 +68,6 @@
                 التقارير
             </a>
 
-            <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
             <div class="my-3 border-t border-slate-700/60"></div>
             <p class="px-3 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">الإدارة</p>
             <a href="/users" class="flex items-center px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-xl <?= $nav['users'] ? $activeClass : $inactiveClass ?> group transition-all duration-200 focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-[#0f172a] cursor-pointer">

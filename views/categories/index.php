@@ -1,5 +1,6 @@
 <?php require BASE_PATH . '/views/layouts/header.php'; ?>
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
+<?php $isAdmin = ($_SESSION['role'] ?? '') === 'admin'; ?>
 
 <nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
     <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
@@ -12,9 +13,11 @@
         <h1 class="text-2xl font-bold text-slate-800">التصنيفات</h1>
         <p class="text-sm text-slate-500 mt-1">تنظيم المنتجات حسب التصنيف</p>
     </div>
+    <?php if ($isAdmin): ?>
     <a href="/categories/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium shadow-md btn-primary focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 cursor-pointer">
         <i class="fa-solid fa-plus ms-2" aria-hidden="true"></i> إضافة تصنيف
     </a>
+    <?php endif; ?>
 </div>
 
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -25,22 +28,24 @@
                     <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">الاسم</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">الرابط</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">الوصف</th>
-                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">إجراءات</th>
+                    <?php if ($isAdmin): ?><th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">إجراءات</th><?php endif; ?>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 <?php if (empty($categories)): ?>
-                <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">لا توجد تصنيفات بعد. <a href="/categories/create" class="text-blue-600 hover:underline">أضف تصنيفاً</a>.</td></tr>
+                <tr><td colspan="<?= $isAdmin ? 4 : 3 ?>" class="px-6 py-8 text-center text-gray-500">لا توجد تصنيفات بعد.<?php if ($isAdmin): ?> <a href="/categories/create" class="text-blue-600 hover:underline">أضف تصنيفاً</a>.<?php endif; ?></td></tr>
                 <?php else: ?>
                 <?php foreach ($categories as $c): ?>
                 <tr class="table-row-hover transition-colors duration-200">
                     <td class="px-6 py-4 text-sm font-medium text-slate-800"><?= htmlspecialchars($c['name'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($c['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($c['description'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+                    <?php if ($isAdmin): ?>
                     <td class="px-6 py-4 text-center">
                         <a href="/categories/edit?id=<?= (int)$c['id'] ?>" class="text-blue-600 hover:text-blue-800 text-sm font-medium ms-3">تعديل</a>
                         <button type="button" onclick="deleteCategory(<?= (int)$c['id'] ?>, '<?= htmlspecialchars(addslashes($c['name']), ENT_QUOTES, 'UTF-8') ?>')" class="text-red-600 hover:text-red-800 text-sm font-medium">حذف</button>
                     </td>
+                    <?php endif; ?>
                 </tr>
                 <?php endforeach; ?>
                 <?php endif; ?>

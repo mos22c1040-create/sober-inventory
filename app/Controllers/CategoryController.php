@@ -23,7 +23,7 @@ class CategoryController extends Controller
 
     public function create(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         $this->view('categories/form', [
             'title' => 'إضافة تصنيف',
             'category' => null,
@@ -33,7 +33,7 @@ class CategoryController extends Controller
 
     public function store(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
         }
@@ -55,7 +55,7 @@ class CategoryController extends Controller
 
     public function edit(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         $id = (int) ($_GET['id'] ?? 0);
         $category = $id ? Category::find($id) : null;
         if (!$category) {
@@ -72,7 +72,7 @@ class CategoryController extends Controller
 
     public function update(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
         }
@@ -99,7 +99,7 @@ class CategoryController extends Controller
 
     public function delete(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
         }

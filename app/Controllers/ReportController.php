@@ -22,7 +22,7 @@ class ReportController extends Controller
     }
     public function index(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         $db = Database::getInstance();
         $isPgsql = $db->getDriver() === 'pgsql';
         $salesByDay = $isPgsql
@@ -49,7 +49,7 @@ class ReportController extends Controller
     /** GET /reports/export/sales — تصدير مبيعات آخر 30 يوماً كـ CSV */
     public function exportSalesCsv(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         $db = Database::getInstance();
         $isPgsql = $db->getDriver() === 'pgsql';
         $rows = $isPgsql
@@ -73,7 +73,7 @@ class ReportController extends Controller
     /** GET /reports/export/products — تصدير أكثر المنتجات مبيعاً كـ CSV */
     public function exportTopProductsCsv(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         $db = Database::getInstance();
         $isPgsql = $db->getDriver() === 'pgsql';
         $rows = $isPgsql

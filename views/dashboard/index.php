@@ -1,6 +1,10 @@
 <?php require BASE_PATH . '/views/layouts/header.php'; ?>
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
-<?php $appSettings = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : []; $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع'; ?>
+<?php
+$appSettings    = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : [];
+$currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
+$isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
+?>
 
 <header class="page-header">
     <h1 class="page-title">لوحة التحكم</h1>
@@ -120,8 +124,8 @@
         <div class="absolute -right-8 -top-8 w-28 h-28 bg-slate-100 rounded-full opacity-60"></div>
         <div class="flex justify-between items-center mb-5 relative z-10">
             <h3 class="text-lg font-bold text-slate-800">آخر المبيعات</h3>
-            <a href="/reports" class="touch-target flex items-center justify-center text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer" aria-label="التقارير">
-                <i class="fa-solid fa-chart-pie text-sm"></i>
+            <a href="<?= $isAdmin ? '/reports' : '/sales' ?>" class="touch-target flex items-center justify-center text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer" aria-label="<?= $isAdmin ? 'التقارير' : 'المبيعات' ?>">
+                <i class="fa-solid fa-<?= $isAdmin ? 'chart-pie' : 'list' ?> text-sm"></i>
             </a>
         </div>
         <div class="flex-1 overflow-y-auto space-y-4 pr-2 relative z-10 min-h-[200px]">
@@ -158,7 +162,7 @@
             <?php endif; ?>
         </div>
         
-        <a href="/reports" class="mt-4 block w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-blue-600 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all text-center cursor-pointer">
+        <a href="<?= $isAdmin ? '/reports' : '/sales' ?>" class="mt-4 block w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-blue-600 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all text-center cursor-pointer">
             <i class="fa-solid fa-list text-xs"></i> عرض كل المبيعات
         </a>
     </div>

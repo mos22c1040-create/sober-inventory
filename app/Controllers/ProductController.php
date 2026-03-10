@@ -25,7 +25,7 @@ class ProductController extends Controller
 
     public function create(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         $categories = Category::all();
         $this->view('products/form', [
             'title' => 'إضافة منتج',
@@ -37,7 +37,7 @@ class ProductController extends Controller
 
     public function store(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
         }
@@ -67,7 +67,7 @@ class ProductController extends Controller
 
     public function edit(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         $id = (int) ($_GET['id'] ?? 0);
         $product = $id ? Product::find($id) : null;
         if (!$product) {
@@ -86,7 +86,7 @@ class ProductController extends Controller
 
     public function update(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
         }
@@ -119,7 +119,7 @@ class ProductController extends Controller
 
     public function delete(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
         }

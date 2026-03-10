@@ -14,7 +14,7 @@ class PurchaseController extends Controller
 {
     public function index(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         $purchases = Purchase::all();
         $this->view('purchases/index', [
             'title' => 'المشتريات',
@@ -24,7 +24,7 @@ class PurchaseController extends Controller
 
     public function create(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         $products = Product::all(true);
         $this->view('purchases/form', [
             'title' => 'مشتريات جديدة',
@@ -35,7 +35,7 @@ class PurchaseController extends Controller
 
     public function store(): void
     {
-        AuthHelper::requireAuth();
+        AuthHelper::requireRole('admin');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
         }
