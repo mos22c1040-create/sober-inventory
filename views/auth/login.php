@@ -249,9 +249,13 @@
 
             setLoading(true);
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
+
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
+                    signal: controller.signal,
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept':       'application/json',
@@ -263,13 +267,14 @@
                         csrf_token: csrf,
                     }),
                 });
+                clearTimeout(timeoutId);
 
                 // Parse JSON regardless of status code
                 let data = {};
                 try { data = await response.json(); } catch (_) { /* no-op */ }
 
                 if (response.ok && data.success) {
-                    // ── Success path ───────────────────────────────
+                    clearTimeout(timeoutId);
                     showAlert(data.message ?? 'تم تسجيل الدخول بنجاح.', 'success');
                     // Brief pause so the user sees the success banner, then redirect
                     setTimeout(() => {
@@ -291,8 +296,14 @@
                     }
                 }
             } catch (networkErr) {
-                // Fetch itself failed (no connection, CORS, etc.)
-                showAlert('تعذّر الاتصال بالخادم. تحقق من الشبكة وحاول مرة أخرى.', 'error');
+                clearTimeout(timeoutId);
+                const isTimeout = networkErr && networkErr.name === 'AbortError';
+                showAlert(
+                    isTimeout
+                        ? 'انتهت المهلة. تحقق من الاتصال بالسيرفر وحاول مرة أخرى.'
+                        : 'تعذّر الاتصال بالخادم. تحقق من الشبكة وحاول مرة أخرى.',
+                    'error'
+                );
                 setLoading(false);
             }
         });
