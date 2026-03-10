@@ -67,7 +67,7 @@ class Database
             error_log('[DB] Connection failed: ' . $e->getMessage());
             http_response_code(503);
             header('Content-Type: application/json');
-            $isDev = ($_ENV['APP_ENV'] ?? '') !== 'production';
+            $isDev = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '') !== 'production';
             $msg = 'خدمة قاعدة البيانات غير متاحة حالياً.';
             if ($isDev) {
                 $msg .= ' | ' . $e->getMessage();

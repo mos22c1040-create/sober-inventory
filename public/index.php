@@ -26,7 +26,7 @@ if ($requestPath !== '/' && $requestPath !== '') {
 if (file_exists(BASE_PATH . '/config/db.php')) {
     require BASE_PATH . '/config/db.php';
 }
-$isProduction = ($_ENV['APP_ENV'] ?? 'development') === 'production';
+$isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: 'development') === 'production';
 if ($isProduction) {
     ini_set('display_errors', '0');
     ini_set('display_startup_errors', '0');
@@ -64,7 +64,7 @@ spl_autoload_register(function ($class) {
 });
 
 // Use database sessions on Vercel/serverless (SESSION_DRIVER=database in .env)
-if (($_ENV['SESSION_DRIVER'] ?? '') === 'database') {
+if (($_ENV['SESSION_DRIVER'] ?? getenv('SESSION_DRIVER') ?: '') === 'database') {
     $handler = new \App\Helpers\DatabaseSessionHandler();
     session_set_save_handler($handler, true);
 }

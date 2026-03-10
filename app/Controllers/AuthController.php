@@ -65,7 +65,7 @@ class AuthController extends Controller
         try {
             $this->loginHandler($sendError);
         } catch (\Throwable $e) {
-            $isDev = ($_ENV['APP_ENV'] ?? '') !== 'production';
+            $isDev = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '') !== 'production';
             $msg   = $isDev && $e->getMessage()
                 ? 'خطأ في الخادم: ' . $e->getMessage()
                 : 'خطأ في الخادم. حاول مرة أخرى لاحقاً.';
@@ -172,7 +172,7 @@ class AuthController extends Controller
                 'redirect' => '/dashboard',
             ], 200);
         } catch (\Throwable $e) {
-            $isDev = ($_ENV['APP_ENV'] ?? '') !== 'production';
+            $isDev = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '') !== 'production';
             $msg   = $isDev && $e->getMessage()
                 ? 'خطأ في الخادم: ' . $e->getMessage()
                 : 'خطأ في الخادم. حاول مرة أخرى لاحقاً.';

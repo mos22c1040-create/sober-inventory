@@ -26,7 +26,8 @@ if (!function_exists('loadEnv')) {
 
 loadEnv(BASE_PATH . '/.env');
 
-$databaseUrl = $_ENV['DATABASE_URL'] ?? '';
+// Railway/Heroku set env vars in getenv(), Supabase pooler URL may only be there
+$databaseUrl = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL') ?: '';
 
 if ($databaseUrl !== '' && (strpos($databaseUrl, 'postgres://') === 0 || strpos($databaseUrl, 'postgresql://') === 0)) {
     // Supabase / PostgreSQL: postgresql://user:pass@host:5432/postgres
@@ -45,10 +46,10 @@ if ($databaseUrl !== '' && (strpos($databaseUrl, 'postgres://') === 0 || strpos(
 
 return [
     'driver'   => 'mysql',
-    'host'     => $_ENV['DB_HOST'] ?? '127.0.0.1',
-    'port'     => $_ENV['DB_PORT'] ?? '3306',
-    'dbname'   => $_ENV['DB_DATABASE'] ?? 'inventory_pos',
-    'user'     => $_ENV['DB_USERNAME'] ?? 'root',
-    'password' => $_ENV['DB_PASSWORD'] ?? '',
+    'host'     => $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: '127.0.0.1',
+    'port'     => $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '3306',
+    'dbname'   => $_ENV['DB_DATABASE'] ?? getenv('DB_DATABASE') ?: 'inventory_pos',
+    'user'     => $_ENV['DB_USERNAME'] ?? getenv('DB_USERNAME') ?: 'root',
+    'password' => $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: '',
     'charset'  => 'utf8mb4',
 ];
