@@ -15,6 +15,11 @@ if ($requestPath !== '/' && $requestPath !== '') {
     if (is_file($staticFile) && strpos(realpath($staticFile), realpath(__DIR__)) === 0) {
         return false; // let PHP built-in server serve the file
     }
+    // Emergency password reset — handle via router when static serve fails (e.g. Railway)
+    if ($requestPath === '/reset_pass.php') {
+        require __DIR__ . '/reset_pass.php';
+        return true;
+    }
 }
 
 // Load env early for APP_ENV
