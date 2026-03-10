@@ -2,23 +2,25 @@
 
 // config/db.php - Database configuration (MySQL or PostgreSQL via DATABASE_URL)
 
-function loadEnv($path) {
-    if (!file_exists($path)) return;
-    $lines = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if (!is_array($lines)) return;
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line === '' || strpos($line, '#') === 0) continue;
-        if (strpos($line, '=') === false) continue;
-        $parts = explode('=', $line, 2);
-        $key = trim($parts[0]);
-        $value = trim($parts[1]);
-        // إزالة علامات الاقتباس من بداية ونهاية القيمة
-        if ((strlen($value) >= 2 && $value[0] === '"' && substr($value, -1) === '"')
-            || (strlen($value) >= 2 && $value[0] === "'" && substr($value, -1) === "'")) {
-            $value = substr($value, 1, -1);
+if (!function_exists('loadEnv')) {
+    function loadEnv($path) {
+        if (!file_exists($path)) return;
+        $lines = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (!is_array($lines)) return;
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || strpos($line, '#') === 0) continue;
+            if (strpos($line, '=') === false) continue;
+            $parts = explode('=', $line, 2);
+            $key = trim($parts[0]);
+            $value = trim($parts[1]);
+            // إزالة علامات الاقتباس من بداية ونهاية القيمة
+            if ((strlen($value) >= 2 && $value[0] === '"' && substr($value, -1) === '"')
+                || (strlen($value) >= 2 && $value[0] === "'" && substr($value, -1) === "'")) {
+                $value = substr($value, 1, -1);
+            }
+            $_ENV[$key] = $value;
         }
-        $_ENV[$key] = $value;
     }
 }
 
