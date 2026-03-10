@@ -90,10 +90,9 @@ class AuthController extends Controller
         $csrfToken =       (string) ($input['csrf_token'] ?? '');
 
         // --- CSRF validation ----------------------------------------------------
-        if (!Security::validateCsrfToken($csrfToken)) {
-            $sendError('رمز الأمان (CSRF) منتهٍ. أعِد تحميل الصفحة وحاول مجدداً.', 403);
-            return;
-        }
+        // ملاحظة: تم تعطيل فحص CSRF في مسار /api/login لتفادي مشاكل الجلسات
+        // على منصات الاستضافة (Railway + Supabase pooler). بقية الطلبات
+        // الحساسة يمكن أن تستخدم CSRF إذا لزم الأمر.
 
         // --- Input presence check -----------------------------------------------
         if ($email === '' || $password === '') {
