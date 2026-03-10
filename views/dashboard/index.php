@@ -2,88 +2,74 @@
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
 <?php $appSettings = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : []; $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع'; ?>
 
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-slate-800">لوحة التحكم</h1>
-    <p class="text-sm text-slate-500 mt-1">نظرة عامة على المخزون والمبيعات</p>
-</div>
+<header class="page-header">
+    <h1 class="page-title">لوحة التحكم</h1>
+    <p class="page-subtitle">نظرة عامة على المخزون والمبيعات</p>
+</header>
 
-<!-- Dashboard Stats Widgets -->
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8 stagger-children">
     
-    <!-- البطاقات الإحصائية -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover hover:-translate-y-0.5 group">
+    <div class="app-card p-6 hover:-translate-y-0.5 group">
         <div class="flex justify-between items-start">
             <div>
-                <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">مبيعات اليوم</p>
-                <h3 class="text-3xl font-bold text-slate-800 mt-2"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($todaySales ?? 0), 0) ?></h3>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">مبيعات اليوم</p>
+                <h3 class="stat-value text-2xl md:text-3xl font-bold text-slate-800 mt-1.5"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($todaySales ?? 0), 0) ?></h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
                 <i class="fa-solid fa-money-bill-wave text-lg"></i>
             </div>
         </div>
-        <div class="mt-5 flex items-center text-sm">
-            <span class="text-gray-500 font-medium"><?= (int)($todayCount ?? 0) ?> فاتورة اليوم</span>
-        </div>
+        <p class="mt-4 text-sm text-slate-500 font-medium"><?= (int)($todayCount ?? 0) ?> فاتورة اليوم</p>
     </div>
 
-    <!-- فواتير اليوم -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover hover:-translate-y-0.5 group">
+    <div class="app-card p-6 hover:-translate-y-0.5 group">
         <div class="flex justify-between items-start">
             <div>
-                <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">عدد الفواتير (اليوم)</p>
-                <h3 class="text-3xl font-bold text-slate-800 mt-2"><?= (int)($todayCount ?? 0) ?></h3>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">عدد الفواتير</p>
+                <h3 class="stat-value text-2xl md:text-3xl font-bold text-slate-800 mt-1.5"><?= (int)($todayCount ?? 0) ?></h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
                 <i class="fa-solid fa-receipt text-lg"></i>
             </div>
         </div>
-        <div class="mt-5 flex items-center text-sm">
-            <span class="text-gray-500 font-medium">المبيعات المكتملة اليوم</span>
-        </div>
+        <p class="mt-4 text-sm text-slate-500 font-medium">المبيعات المكتملة اليوم</p>
     </div>
 
-    <!-- إجمالي المنتجات -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover hover:-translate-y-0.5 group">
+    <div class="app-card p-6 hover:-translate-y-0.5 group">
         <div class="flex justify-between items-start">
             <div>
-                <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">إجمالي المنتجات</p>
-                <h3 class="text-3xl font-bold text-slate-800 mt-2"><?= (int)($productCount ?? 0) ?></h3>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">إجمالي المنتجات</p>
+                <h3 class="stat-value text-2xl md:text-3xl font-bold text-slate-800 mt-1.5"><?= (int)($productCount ?? 0) ?></h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform duration-300">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
                 <i class="fa-solid fa-boxes-stacked text-lg"></i>
             </div>
         </div>
-        <div class="mt-5 flex items-center text-sm">
-            <span class="text-gray-500 font-medium flex items-center">
-                <div class="w-2 h-2 rounded-full bg-green-500 me-2"></div>
-                في الكتالوج
-            </span>
-        </div>
+        <p class="mt-4 text-sm text-slate-500 font-medium flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> في الكتالوج
+        </p>
     </div>
 
-    <!-- تنبيه نقص المخزون -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-red-100 card-hover hover:-translate-y-0.5 group relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-1.5 h-full bg-red-400"></div>
+    <div class="app-card p-6 hover:-translate-y-0.5 group relative overflow-hidden border-red-100">
+        <div class="absolute top-0 right-0 w-1 h-full bg-red-400 rounded-l"></div>
         <div class="flex justify-between items-start">
             <div>
-                <p class="text-sm font-semibold text-red-400 uppercase tracking-wider">منتجات منخفضة المخزون</p>
-                <h3 class="text-3xl font-bold text-slate-800 mt-2"><?= (int)($lowStockCount ?? 0) ?></h3>
+                <p class="text-xs font-bold text-red-500 uppercase tracking-widest">منخفضة المخزون</p>
+                <h3 class="stat-value text-2xl md:text-3xl font-bold text-slate-800 mt-1.5"><?= (int)($lowStockCount ?? 0) ?></h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 text-white flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform duration-300">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-lg shadow-red-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
                 <i class="fa-solid fa-triangle-exclamation text-lg"></i>
             </div>
         </div>
-        <div class="mt-5 flex items-center text-sm">
-            <a href="/products" class="min-h-[44px] flex items-center justify-center text-red-600 font-bold hover:text-red-700 transition-colors px-4 py-2.5 bg-red-50 hover:bg-red-100 rounded-xl focus:ring-2 focus:ring-red-400 focus:ring-offset-2 cursor-pointer">
-                تحتاج إعادة تخزين <i class="fa-solid fa-arrow-left ms-2 text-xs" aria-hidden="true"></i>
-            </a>
-        </div>
+        <a href="/products" class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-red-600 hover:text-red-700 px-4 py-2.5 bg-red-50 hover:bg-red-100 rounded-xl transition-colors focus:ring-2 focus:ring-red-400 focus:ring-offset-2 cursor-pointer">
+            إعادة تخزين <i class="fa-solid fa-arrow-left text-xs"></i>
+        </a>
     </div>
 </div>
 
 <!-- مخطط وجدول المبيعات -->
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-    <div class="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col">
+    <div class="xl:col-span-2 app-card-flat p-6 flex flex-col">
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h3 class="text-lg font-bold text-slate-800">نظرة عامة على المبيعات</h3>
@@ -130,22 +116,24 @@
     </div>
 
     <!-- آخر المبيعات -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col relative overflow-hidden">
-        <div class="absolute -right-10 -top-10 w-32 h-32 bg-slate-50 rounded-full opacity-50"></div>
-        
-        <div class="flex justify-between items-center mb-6 relative z-10">
+    <div class="app-card-flat p-6 flex flex-col relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-28 h-28 bg-slate-100 rounded-full opacity-60"></div>
+        <div class="flex justify-between items-center mb-5 relative z-10">
             <h3 class="text-lg font-bold text-slate-800">آخر المبيعات</h3>
-            <a href="/reports" class="min-w-[44px] min-h-[44px] flex items-center justify-center text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer" aria-label="التقارير">
-                <i class="fa-solid fa-chart-pie text-sm" aria-hidden="true"></i>
+            <a href="/reports" class="touch-target flex items-center justify-center text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer" aria-label="التقارير">
+                <i class="fa-solid fa-chart-pie text-sm"></i>
             </a>
         </div>
-        
-        <div class="flex-1 overflow-y-auto space-y-5 pr-2 relative z-10">
+        <div class="flex-1 overflow-y-auto space-y-4 pr-2 relative z-10 min-h-[200px]">
             <?php 
             $recentSales = $recentSales ?? [];
             if (empty($recentSales)): 
             ?>
-            <p class="text-gray-500 text-sm py-4">لا توجد مبيعات حديثة.</p>
+            <div class="empty-state py-8">
+                <div class="empty-state-icon"><i class="fa-solid fa-receipt"></i></div>
+                <p class="text-sm font-medium">لا توجد مبيعات حديثة</p>
+                <a href="/sales/create" class="inline-block mt-3 text-sm font-bold text-blue-600 hover:text-blue-700">إنشاء فاتورة</a>
+            </div>
             <?php else: ?>
             <?php foreach ($recentSales as $sale): 
                 $statusClass = $sale['status'] === 'paid' ? 'bg-emerald-100 text-emerald-700' : ($sale['status'] === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700');
@@ -170,8 +158,8 @@
             <?php endif; ?>
         </div>
         
-        <a href="/reports" class="mt-4 block w-full min-h-[44px] flex items-center justify-center py-2.5 border-2 border-slate-100 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-200 hover:text-blue-600 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all text-center cursor-pointer">
-            عرض كل المبيعات
+        <a href="/reports" class="mt-4 block w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-blue-600 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all text-center cursor-pointer">
+            <i class="fa-solid fa-list text-xs"></i> عرض كل المبيعات
         </a>
     </div>
 </div>

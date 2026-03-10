@@ -2,20 +2,20 @@
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
 <?php $appSettings = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : []; $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع'; ?>
 
-<nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+<nav class="flex items-center gap-2 text-sm text-slate-500 mb-4">
     <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
-    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
+    <i class="fa-solid fa-chevron-left text-xs text-slate-400"></i>
     <span class="text-slate-700 font-medium">المنتجات</span>
 </nav>
 
-<div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-800">المنتجات</h1>
-        <p class="text-sm text-slate-500 mt-1">جميع المنتجات في الكتالوج — بحث بالباركود أو الكاميرا</p>
-    </div>
+<div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+    <header class="page-header mb-0">
+        <h1 class="page-title">المنتجات</h1>
+        <p class="page-subtitle">جميع المنتجات في الكتالوج — بحث بالباركود أو الكاميرا</p>
+    </header>
     <div class="flex flex-wrap items-center gap-3">
         <!-- بحث بالباركود (قارئ USB أو إدخال يدوي) -->
-        <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+        <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
             <i class="fa-solid fa-barcode text-gray-400 text-lg"></i>
             <input type="text" id="barcode-input" placeholder="امسح الباركود أو اكتب الرمز..." autocomplete="off"
                    class="w-56 border-0 bg-transparent py-1 text-sm outline-none placeholder-gray-400">
@@ -37,27 +37,33 @@
 
 <div id="barcode-result" class="hidden mb-4 rounded-xl p-4 border text-sm font-medium" role="alert"></div>
 
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+<div class="app-card-flat overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
                 <tr>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">الاسم</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">الرمز</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">التصنيف</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">السعر</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">المخزون</th>
-                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">إجراءات</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">الاسم</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">التصنيف</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">السعر</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">المخزون</th>
+                    <th class="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">إجراءات</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y divide-slate-100">
                 <?php if (empty($products)): ?>
-                <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">لا توجد منتجات بعد. <a href="/products/create" class="text-blue-600 hover:underline">أضف منتجاً</a>.</td></tr>
+                <tr><td colspan="6" class="px-6 py-16">
+                    <div class="empty-state">
+                        <div class="empty-state-icon mx-auto"><i class="fa-solid fa-box-open"></i></div>
+                        <p class="font-medium text-slate-600">لا توجد منتجات بعد</p>
+                        <a href="/products/create" class="inline-flex items-center gap-2 mt-3 text-sm font-bold text-blue-600 hover:text-blue-700"><i class="fa-solid fa-plus"></i> إضافة منتج</a>
+                    </div>
+                </td></tr>
                 <?php else: ?>
                 <?php foreach ($products as $p): 
                     $lowStock = isset($p['low_stock_threshold']) && $p['quantity'] <= $p['low_stock_threshold'] && $p['low_stock_threshold'] > 0;
                 ?>
-                <tr class="table-row-hover transition-colors duration-200" data-product-id="<?= (int)$p['id'] ?>" data-sku="<?= htmlspecialchars($p['sku'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                <tr class="app-table-row transition-colors duration-200" data-product-id="<?= (int)$p['id'] ?>" data-sku="<?= htmlspecialchars($p['sku'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <td class="px-6 py-4 text-sm font-medium text-slate-800"><?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($p['sku'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($p['category_name'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>

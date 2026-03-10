@@ -3,22 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <title>الصفحة غير موجودة — 404</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Tajawal', sans-serif; } </style>
+    <link rel="stylesheet" href="/css/app.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style> body { font-family: 'Tajawal', sans-serif; } </style>
 </head>
-<body class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-2xl shadow-lg border border-slate-200 p-8 text-center">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-slate-100 flex items-center justify-center">
-            <i class="fa-solid fa-circle-question text-4xl text-slate-500"></i>
+<body class="error-page">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden login-card animate-slide-up">
+        <div class="relative px-8 pt-10 pb-6 text-center">
+            <span class="error-code block leading-none">404</span>
+            <div class="w-20 h-20 mx-auto -mt-4 mb-6 rounded-2xl bg-slate-100 flex items-center justify-center relative z-10">
+                <i class="fa-solid fa-magnifying-glass text-3xl text-slate-400"></i>
+            </div>
+            <h1 class="text-xl font-bold text-slate-800 mb-2">الصفحة غير موجودة</h1>
+            <p class="text-slate-500 text-sm mb-8 max-w-sm mx-auto">الصفحة التي تبحث عنها غير موجودة أو تم نقلها.</p>
+            <a href="/dashboard" class="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 cursor-pointer transition-colors shadow-lg shadow-blue-500/25">
+                <i class="fa-solid fa-house"></i> العودة للوحة التحكم
+            </a>
         </div>
-        <h1 class="text-2xl font-bold text-slate-800 mb-2">الصفحة غير موجودة</h1>
-        <p class="text-slate-600 mb-6">الصفحة التي تبحث عنها غير موجودة أو تم نقلها.</p>
-        <a href="/dashboard" class="inline-flex items-center min-h-[44px] px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 cursor-pointer">
-            <i class="fa-solid fa-house me-2"></i> العودة للوحة التحكم
-        </a>
     </div>
 </body>
 </html>

@@ -6,127 +6,71 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <title>تسجيل الدخول — نظام المخزون</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Tajawal', sans-serif; font-size: 16px; line-height: 1.6; }
-        input:focus-visible, button:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
-        /* Spinner animation used in the loading state */
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner {
-            display: inline-block;
-            width: 1.1rem; height: 1.1rem;
-            border: 2px solid rgba(255,255,255,.35);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin .7s linear infinite;
-            vertical-align: middle;
-            margin-inline-end: .4rem;
-        }
-    </style>
+    <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Tajawal', 'system-ui', 'sans-serif'] } } } };</script>
+    <link rel="stylesheet" href="/css/app.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 flex items-center justify-center p-4
-             selection:bg-blue-500 selection:text-white">
+<body class="min-h-screen flex items-center justify-center p-4 selection:bg-blue-500 selection:text-white"
+      style="background: linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 35%, #f8fafc 100%);">
 
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+    <div class="w-full max-w-md login-card bg-white overflow-hidden animate-slide-up">
 
-        <!-- ── Header banner ─────────────────────────────────────────── -->
-        <div class="bg-gradient-to-l from-blue-700 to-blue-500 px-6 py-8 text-center text-white">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl
-                        bg-white/10 shadow-inner mb-4">
-                <i class="fa-solid fa-box-open text-3xl"></i>
+        <!-- Header -->
+        <div class="login-bg px-6 py-10 text-center text-white relative">
+            <div class="relative z-10 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/15 backdrop-blur border border-white/20 mb-5 shadow-lg">
+                <i class="fa-solid fa-box-open text-3xl text-white"></i>
             </div>
-            <h1 class="text-2xl font-bold tracking-tight">نظام المخزون</h1>
-            <p class="mt-1 text-blue-100 text-sm">سجّل الدخول للوصول إلى لوحة التحكم</p>
+            <h1 class="relative z-10 text-2xl font-bold tracking-tight text-white drop-shadow-sm">نظام المخزون</h1>
+            <p class="relative z-10 mt-1.5 text-blue-100/90 text-sm font-medium">سجّل الدخول للوصول إلى لوحة التحكم</p>
         </div>
 
-        <!-- ── Form body ─────────────────────────────────────────────── -->
-        <div class="p-8">
+        <!-- Form -->
+        <div class="p-8 pt-7">
 
-            <!-- Alert box — hidden until needed -->
             <div id="alert-box"
-                 class="hidden rounded-xl p-4 mb-6 border text-sm font-medium"
+                 class="hidden rounded-xl p-4 mb-5 border text-sm font-medium flex items-start gap-2"
                  role="alert"
                  aria-live="polite">
-                <span id="alert-icon" class="me-2"></span>
+                <span id="alert-icon" class="shrink-0"></span>
                 <span id="alert-message"></span>
             </div>
 
-            <!-- Login form -->
             <form id="login-form" novalidate>
-                <!-- CSRF token — invisible security field -->
-                <input type="hidden" id="csrf_token"
-                       value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" id="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-                <!-- Email -->
                 <div class="mb-5">
-                    <label for="email"
-                           class="block text-sm font-semibold text-gray-700 mb-1">
-                        البريد الإلكتروني
-                    </label>
-                    <input type="email"
-                           id="email"
-                           name="email"
-                           required
-                           autocomplete="email"
+                    <label for="email" class="block text-sm font-semibold text-slate-700 mb-1.5">البريد الإلكتروني</label>
+                    <input type="email" id="email" name="email" required autocomplete="email"
                            placeholder="admin@example.com"
-                           class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm
-                                  placeholder-gray-400 outline-none transition
-                                  focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
-                                  focus:bg-white">
-                    <p id="email-error" class="hidden mt-1 text-xs text-red-600"></p>
+                           class="app-input w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm placeholder-slate-400 focus:bg-white">
+                    <p id="email-error" class="hidden mt-1.5 text-xs text-red-600 font-medium"></p>
                 </div>
 
-                <!-- Password -->
                 <div class="mb-6">
-                    <label for="password"
-                           class="block text-sm font-semibold text-gray-700 mb-1">
-                        كلمة المرور
-                    </label>
+                    <label for="password" class="block text-sm font-semibold text-slate-700 mb-1.5">كلمة المرور</label>
                     <div class="relative">
-                        <input type="password"
-                               id="password"
-                               name="password"
-                               required
-                               autocomplete="current-password"
+                        <input type="password" id="password" name="password" required autocomplete="current-password"
                                placeholder="••••••••"
-                               class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm
-                                      placeholder-gray-400 outline-none transition
-                                      focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
-                                      focus:bg-white pe-12">
-                        <!-- Toggle password visibility -->
-                        <button type="button"
-                                id="toggle-password"
-                                tabindex="-1"
-                                class="absolute inset-y-0 end-3 flex items-center text-gray-400
-                                       hover:text-blue-500 transition-colors"
+                               class="app-input w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pe-12 text-sm placeholder-slate-400 focus:bg-white">
+                        <button type="button" id="toggle-password" tabindex="-1"
+                                class="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-blue-500 transition-colors"
                                 aria-label="إظهار / إخفاء كلمة المرور">
                             <i class="fa-regular fa-eye text-base" id="eye-icon"></i>
                         </button>
                     </div>
-                    <p id="password-error" class="hidden mt-1 text-xs text-red-600"></p>
+                    <p id="password-error" class="hidden mt-1.5 text-xs text-red-600 font-medium"></p>
                 </div>
 
-                <!-- Submit -->
-                <button type="submit"
-                        id="submit-btn"
-                        class="w-full flex items-center justify-center gap-2
-                               py-3 px-4 rounded-xl text-sm font-semibold text-white
-                               bg-blue-600 hover:bg-blue-700 active:scale-[.98]
-                               focus:outline-none focus:ring-2 focus:ring-blue-500/50
-                               transition-all duration-150
-                               disabled:opacity-60 disabled:cursor-not-allowed">
+                <button type="submit" id="submit-btn"
+                        class="btn-primary w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25">
                     <span id="btn-text">تسجيل الدخول</span>
                     <i class="fa-solid fa-arrow-left text-xs" id="btn-icon"></i>
                 </button>
             </form>
-
-        </div><!-- /form body -->
-    </div><!-- /card -->
-
-    <!-- FontAwesome (icons) -->
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        </div>
+    </div>
 
     <!-- ── Fetch API Login Script ─────────────────────────────────── -->
     <script>
