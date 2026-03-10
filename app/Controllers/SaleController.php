@@ -17,14 +17,20 @@ class SaleController extends Controller
     {
         AuthHelper::requireAuth();
         try {
-            $sales = Sale::all(100);
+            $sales      = Sale::all(200);
+            $todayTotal = Sale::todayTotal();
+            $todayCount = Sale::todayCount();
         } catch (PDOException $e) {
-            $sales = [];
+            $sales      = [];
+            $todayTotal = 0.0;
+            $todayCount = 0;
         }
 
         $this->view('sales/index', [
-            'title' => 'المبيعات',
-            'sales' => $sales,
+            'title'      => 'المبيعات',
+            'sales'      => $sales,
+            'todayTotal' => $todayTotal,
+            'todayCount' => $todayCount,
         ]);
     }
 
@@ -53,6 +59,8 @@ class SaleController extends Controller
 
         $customerName  = trim(Security::sanitizeString((string) ($input['customer_name'] ?? '')));
         $paymentMethod = in_array($input['payment_method'] ?? '', ['cash', 'card']) ? $input['payment_method'] : 'cash';
+        $discount      = max(0.0, (float) ($input['discount'] ?? 0));
+        $notes         = trim(Security::sanitizeString((string) ($input['notes'] ?? '')));
         $items         = $input['items'] ?? [];
 
         if (empty($customerName)) {
@@ -93,7 +101,7 @@ class SaleController extends Controller
 
         try {
             $userId = AuthHelper::userId();
-            $saleId = Sale::create($userId, $validItems, $customerName, $paymentMethod);
+            $saleId = Sale::create($userId, $validItems, $customerName, $paymentMethod, $discount, $notes);
 
             ActivityLog::log('sale.create', 'sale', $saleId, "فاتورة للعميل: $customerName");
 

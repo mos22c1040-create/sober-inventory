@@ -110,6 +110,24 @@ class Product
         return $stmt->rowCount() > 0;
     }
 
+    /** البحث عن منتج بالاسم أو الرمز (SKU) — للأوتوكومبليت. */
+    public static function search(string $q, int $limit = 10): array
+    {
+        $q = trim($q);
+        if ($q === '') {
+            return [];
+        }
+        $db = Database::getInstance();
+        $like = '%' . $q . '%';
+        $stmt = $db->query(
+            "SELECT p.id, p.name, p.sku, p.price, p.quantity FROM products p
+              WHERE (p.name LIKE :like OR p.sku LIKE :like2) AND p.quantity > 0
+              ORDER BY p.name ASC LIMIT " . (int) $limit,
+            [':like' => $like, ':like2' => $like]
+        );
+        return $stmt->fetchAll();
+    }
+
     public static function countLowStock(): int
     {
         $db = Database::getInstance();

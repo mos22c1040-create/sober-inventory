@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS `sales` (
   `invoice_number` varchar(50) NOT NULL,
   `customer_name` varchar(255) DEFAULT 'Walk-in Customer',
   `total` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `discount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `notes` text DEFAULT NULL,
   `payment_method` enum('cash','card','mixed') DEFAULT 'cash',
   `status` enum('paid','pending','cancelled') DEFAULT 'paid',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,

@@ -137,6 +137,19 @@ class ProductController extends Controller
         $this->jsonResponse(['success' => true]);
     }
 
+    /** GET /api/products/search?q=xxx — بحث بالاسم أو الرمز (autocomplete). */
+    public function search(): void
+    {
+        AuthHelper::requireAuth();
+        $q = trim((string) ($_GET['q'] ?? ''));
+        if (strlen($q) < 1) {
+            $this->jsonResponse([]);
+            return;
+        }
+        $results = Product::search($q, 12);
+        $this->jsonResponse($results);
+    }
+
     /** GET /api/products/barcode?sku=xxx — find product by SKU/barcode for scanner. */
     public function barcode(): void
     {

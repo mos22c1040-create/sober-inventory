@@ -55,24 +55,27 @@ class Sale
         return sprintf("INV-%s-%03d", $y, $num);
     }
 
-    public static function create(int $userId, array $items, string $customerName = 'Walk-in Customer', string $paymentMethod = 'cash'): int
+    public static function create(int $userId, array $items, string $customerName = 'Walk-in Customer', string $paymentMethod = 'cash', float $discount = 0.0, string $notes = ''): int
     {
         $db = Database::getInstance();
         $invoiceNumber = self::generateInvoiceNumber();
-        $total = 0.0;
+        $subtotal = 0.0;
         foreach ($items as $item) {
-            $total += (float) $item['total'];
+            $subtotal += (float) $item['total'];
         }
+        $total = max(0, $subtotal - $discount);
 
         $db->beginTransaction();
         try {
             $db->query(
-                "INSERT INTO sales (user_id, invoice_number, customer_name, total, payment_method, status) VALUES (:user_id, :invoice_number, :customer_name, :total, :payment_method, 'paid')",
+                "INSERT INTO sales (user_id, invoice_number, customer_name, total, discount, notes, payment_method, status) VALUES (:user_id, :invoice_number, :customer_name, :total, :discount, :notes, :payment_method, 'paid')",
                 [
                     ':user_id'        => $userId,
                     ':invoice_number' => $invoiceNumber,
                     ':customer_name'  => $customerName,
                     ':total'          => $total,
+                    ':discount'       => $discount,
+                    ':notes'          => $notes !== '' ? $notes : null,
                     ':payment_method' => $paymentMethod,
                 ]
             );

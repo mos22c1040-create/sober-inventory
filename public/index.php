@@ -85,6 +85,7 @@ $router->get('/dashboard', 'DashboardController@index');
 
 // Products
 $router->get('/products', 'ProductController@index');
+$router->get('/api/products/search', 'ProductController@search');
 $router->get('/api/products/barcode', 'ProductController@barcode');
 $router->get('/barcode-scan', 'ProductController@barcodeScanPage');
 $router->post('/api/barcode-push', 'ProductController@barcodePush');
