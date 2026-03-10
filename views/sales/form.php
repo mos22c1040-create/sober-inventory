@@ -237,13 +237,16 @@
                 showAlert(data.error, true);
                 return;
             }
-            if (data.quantity <= 0) {
+            // الاستجابة: { success: true, product: {...} }
+            const p = data.product || data;
+            const stock = parseInt(p.quantity, 10) || 0;
+            if (stock <= 0) {
                 showAlert('المنتج نفد من المخزون!', true);
                 return;
             }
-            const existing = cart.find(i => i.id === data.id);
+            const existing = cart.find(i => i.id === p.id);
             if (existing) {
-                if (existing.qty < data.quantity) {
+                if (existing.qty < existing.stock) {
                     existing.qty++;
                     showAlert('تمت زيادة الكمية', false);
                 } else {
@@ -251,14 +254,14 @@
                 }
             } else {
                 cart.push({
-                    id: data.id,
-                    name: data.name,
-                    sku: data.sku,
-                    price: parseFloat(data.price),
-                    stock: parseInt(data.quantity, 10),
+                    id: p.id,
+                    name: p.name,
+                    sku: p.sku,
+                    price: parseFloat(p.price),
+                    stock: stock,
                     qty: 1
                 });
-                showAlert('تمت الإضافة للفاتورة', false);
+                showAlert('تمت الإضافة للفاتورة ✓', false);
             }
             updateCart();
         })
