@@ -52,6 +52,12 @@ class AuthController extends Controller
      */
     public function login(): void
     {
+        // Ensure JSON response only (no accidental HTML / 200 + text/html)
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json; charset=UTF-8');
+
         $sendError = function (string $message, int $code = 500): void {
             $this->jsonResponse(['error' => $message], $code);
         };

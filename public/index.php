@@ -140,6 +140,12 @@ $router->post('/api/profile/password', 'ProfileController@updatePassword');
 
 // Parse URI
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+// Ensure API login response is never mixed with HTML (clear any prior output)
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $uri === '/api/login') {
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+}
 // If app is in a subfolder like 'sober', you'd need to extract just the path after it
 $baseDir = dirname($_SERVER['SCRIPT_NAME']);
 if ($baseDir === '\\' || $baseDir === '.') {
