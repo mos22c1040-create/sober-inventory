@@ -52,9 +52,13 @@ class AuthController extends Controller
      */
     public function login(): void
     {
+        $sendError = function (string $message, int $code = 500): void {
+            $this->jsonResponse(['error' => $message], $code);
+        };
+
         // --- Method guard -------------------------------------------------------
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->jsonResponse(['error' => 'طريقة الطلب غير مسموح بها.'], 405);
+            $sendError('طريقة الطلب غير مسموح بها.', 405);
             return;
         }
 
@@ -63,7 +67,7 @@ class AuthController extends Controller
         $input = json_decode($raw, true);
 
         if (!is_array($input)) {
-            $this->jsonResponse(['error' => 'جسم الطلب غير صالح (يُتوقع JSON).'], 400);
+            $sendError('جسم الطلب غير صالح (يُتوقع JSON).', 400);
             return;
         }
 
@@ -74,78 +78,79 @@ class AuthController extends Controller
 
         // --- CSRF validation ----------------------------------------------------
         if (!Security::validateCsrfToken($csrfToken)) {
-            $this->jsonResponse([
-                'error' => 'رمز الأمان (CSRF) منتهٍ. أعِد تحميل الصفحة وحاول مجدداً.',
-            ], 403);
+            $sendError('رمز الأمان (CSRF) منتهٍ. أعِد تحميل الصفحة وحاول مجدداً.', 403);
             return;
         }
 
         // --- Input presence check -----------------------------------------------
         if ($email === '' || $password === '') {
-            $this->jsonResponse(['error' => 'البريد الإلكتروني وكلمة المرور مطلوبان.'], 400);
+            $sendError('البريد الإلكتروني وكلمة المرور مطلوبان.', 400);
             return;
         }
 
         // --- Email format validation --------------------------------------------
         if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $this->jsonResponse(['error' => 'صيغة البريد الإلكتروني غير صحيحة.'], 400);
+            $sendError('صيغة البريد الإلكتروني غير صحيحة.', 400);
             return;
         }
 
         // Sanitise the email (display-safe; password must NOT be sanitised before verify)
         $email = Security::sanitizeString($email);
 
-        // --- Fetch user via Prepared Statement (SQL-injection safe) -------------
-        $db   = Database::getInstance();
-        $stmt = $db->query(
-            'SELECT id, username, email, password, role, status
-               FROM users
-              WHERE email = :email
-              LIMIT 1',
-            [':email' => $email]
-        );
+        try {
+            // --- Fetch user via Prepared Statement (SQL-injection safe) -------------
+            $db   = Database::getInstance();
+            $stmt = $db->query(
+                'SELECT id, username, email, password, role, status
+                   FROM users
+                  WHERE email = :email
+                  LIMIT 1',
+                [':email' => $email]
+            );
 
-        /** @var array<string,mixed>|false $user */
-        $user = $stmt->fetch();
+            /** @var array<string,mixed>|false $user */
+            $user = $stmt->fetch();
 
-        // --- Verify password with bcrypt (constant-time, timing-attack-safe) ---
-        if ($user === false || !Security::verifyPassword($password, (string) $user['password'])) {
-            // Generic message → prevents username enumeration
-            $this->jsonResponse(['error' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.'], 401);
-            return;
-        }
+            // --- Verify password with bcrypt (constant-time, timing-attack-safe) ---
+            $storedHash = trim((string) ($user['password'] ?? ''));
+            if ($user === false || $storedHash === '' || !Security::verifyPassword($password, $storedHash)) {
+                $sendError('البريد الإلكتروني أو كلمة المرور غير صحيحة.', 401);
+                return;
+            }
 
-        // --- Account status check -----------------------------------------------
-        if ($user['status'] !== 'active') {
+            // --- Account status check -----------------------------------------------
+            if ($user['status'] !== 'active') {
+                $sendError('حسابك موقوف حالياً. تواصل مع المدير.', 403);
+                return;
+            }
+
+            // --- Build secure session -----------------------------------------------
+            session_regenerate_id(true);
+
+            $_SESSION['user_id']       = (int)    $user['id'];
+            $_SESSION['username']      = (string) $user['username'];
+            $_SESSION['name']          = (string) $user['username'];
+            $_SESSION['email']         = (string) $user['email'];
+            $_SESSION['role']          = (string) $user['role'];
+            $_SESSION['last_activity'] = time();
+
+            unset($_SESSION['csrf_token']);
+            Security::generateCsrfToken();
+
+            ActivityLog::log('login', null, null, (string) $user['email']);
+
             $this->jsonResponse([
-                'error' => 'حسابك موقوف حالياً. تواصل مع المدير.',
-            ], 403);
-            return;
+                'success'  => true,
+                'message'  => 'تم تسجيل الدخول بنجاح.',
+                'redirect' => '/dashboard',
+            ], 200);
+        } catch (\Throwable $e) {
+            $isDev = ($_ENV['APP_ENV'] ?? '') !== 'production';
+            $msg   = $isDev && $e->getMessage()
+                ? 'خطأ في الخادم: ' . $e->getMessage()
+                : 'خطأ في الخادم. حاول مرة أخرى لاحقاً.';
+            $sendError($msg, 500);
         }
-
-        // --- Build secure session -----------------------------------------------
-        // Regenerate ID on every login → prevents Session Fixation attacks
-        session_regenerate_id(true);
-
-        $_SESSION['user_id']       = (int)    $user['id'];
-        $_SESSION['username']      = (string) $user['username'];
-        // 'name' alias — same field; kept separately for display purposes
-        $_SESSION['name']          = (string) $user['username'];
-        $_SESSION['email']         = (string) $user['email'];
-        $_SESSION['role']          = (string) $user['role'];
-        $_SESSION['last_activity'] = time();
-
-        // Rotate CSRF token after login to bind it to the new session
-        unset($_SESSION['csrf_token']);
-        Security::generateCsrfToken();
-
-        ActivityLog::log('login', null, null, (string) $user['email']);
-
-        $this->jsonResponse([
-            'success'  => true,
-            'message'  => 'تم تسجيل الدخول بنجاح.',
-            'redirect' => '/dashboard',
-        ], 200);
     }
 
     // -------------------------------------------------------------------------
