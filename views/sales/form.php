@@ -29,9 +29,9 @@
                 <button type="button" id="search-btn" class="min-w-[44px] min-h-[44px] px-5 py-3 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-bold focus:ring-2 focus:ring-emerald-400 transition-colors cursor-pointer whitespace-nowrap">
                     إضافة للفاتورة
                 </button>
-                <a href="/barcode-scan" target="_blank" class="min-w-[44px] min-h-[44px] px-5 py-3 rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 font-bold focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer whitespace-nowrap flex items-center gap-2">
-                    <i class="fa-solid fa-mobile-screen"></i> كاميرا الجوال
-                </a>
+                <button type="button" id="btn-sale-camera" class="min-w-[44px] min-h-[44px] px-5 py-3 rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 font-bold focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer whitespace-nowrap flex items-center gap-2">
+                    <i class="fa-solid fa-camera"></i> مسح
+                </button>
             </div>
             <div id="barcode-alert" class="hidden mt-3 text-sm font-medium px-4 py-2 rounded-lg" role="alert"></div>
         </div>
@@ -112,6 +112,26 @@
     </div>
 </div>
 
+<!-- طبقة المسح بالكاميرا لصفحة المبيعات -->
+<div id="sale-cam-overlay"
+     class="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 p-4"
+     style="display:none!important">
+    <div class="bg-slate-900 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-700 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+            <span class="text-white font-semibold text-base">مسح الباركود</span>
+            <button type="button" id="sale-cam-close"
+                class="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        <div id="sale-qr-reader" class="w-full bg-black" style="min-height:260px"></div>
+        <div class="px-4 py-3">
+            <p id="sale-cam-status" class="text-slate-400 text-sm text-center">جاري تشغيل الكاميرا...</p>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function() {
     const currencySym = <?= json_encode($currencySymbol, JSON_UNESCAPED_UNICODE) ?>;
@@ -259,18 +279,61 @@
         barcodeInput.focus();
     });
 
-    // Mobile scanner polling — checks for new barcode from bridge every 2s
-    let _lastBridgeSku = null;
-    setInterval(function() {
-        fetch('/api/barcode-last')
-        .then(r => r.json())
-        .then(data => {
-            if (data && data.sku && data.sku !== _lastBridgeSku) {
-                _lastBridgeSku = data.sku;
-                addProductBySku(data.sku);
-            }
-        }).catch(()=>null);
-    }, 2000);
+    // ---- مسح مباشر بالكاميرا (iOS + Android + سطح المكتب) ----
+    (function() {
+        var btnCam   = document.getElementById('btn-sale-camera');
+        var overlay  = document.getElementById('sale-cam-overlay');
+        var btnClose = document.getElementById('sale-cam-close');
+        var statusEl = document.getElementById('sale-cam-status');
+        var scanner  = null;
+
+        function showOverlay() {
+            overlay.style.removeProperty('display');
+            overlay.style.display = 'flex';
+        }
+        function hideOverlay() { overlay.style.display = 'none'; }
+
+        function closeCam() {
+            if (scanner) { scanner.stop().catch(function(){}); scanner = null; }
+            hideOverlay();
+        }
+
+        if (btnCam) {
+            btnCam.addEventListener('click', function() {
+                showOverlay();
+                statusEl && (statusEl.textContent = 'جاري تشغيل الكاميرا...');
+                document.getElementById('sale-qr-reader').innerHTML = '';
+                scanner = new Html5Qrcode('sale-qr-reader', { verbose: false });
+                scanner.start(
+                    { facingMode: 'environment' },
+                    {
+                        fps: 15,
+                        qrbox: { width: 260, height: 160 },
+                        aspectRatio: 1.5,
+                        formatsToSupport: [
+                            Html5QrcodeSupportedFormats.EAN_13,
+                            Html5QrcodeSupportedFormats.EAN_8,
+                            Html5QrcodeSupportedFormats.CODE_128,
+                            Html5QrcodeSupportedFormats.CODE_39,
+                            Html5QrcodeSupportedFormats.UPC_A,
+                            Html5QrcodeSupportedFormats.QR_CODE
+                        ]
+                    },
+                    function(decodedText) {
+                        closeCam();
+                        addProductBySku(decodedText);
+                    },
+                    function() {}
+                ).then(function() {
+                    statusEl && (statusEl.textContent = 'وجّه الكاميرا نحو الباركود');
+                }).catch(function() {
+                    statusEl && (statusEl.textContent = 'تعذّر فتح الكاميرا. تأكد من منح الإذن في المتصفح.');
+                });
+            });
+        }
+        if (btnClose) btnClose.addEventListener('click', closeCam);
+        if (overlay)  overlay.addEventListener('click', function(e) { if (e.target === overlay) closeCam(); });
+    })();
 
     // Form Submission
     document.getElementById('sale-form').addEventListener('submit', async function(e) {
