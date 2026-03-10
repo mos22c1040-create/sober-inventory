@@ -66,7 +66,13 @@ class Database
         } catch (PDOException $e) {
             error_log('[DB] Connection failed: ' . $e->getMessage());
             http_response_code(503);
-            die(json_encode(['error' => 'خدمة قاعدة البيانات غير متاحة حالياً.']));
+            header('Content-Type: application/json');
+            $isDev = ($_ENV['APP_ENV'] ?? '') !== 'production';
+            $msg = 'خدمة قاعدة البيانات غير متاحة حالياً.';
+            if ($isDev) {
+                $msg .= ' | ' . $e->getMessage();
+            }
+            die(json_encode(['error' => $msg]));
         }
     }
 
