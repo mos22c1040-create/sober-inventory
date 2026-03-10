@@ -184,17 +184,20 @@
         // ── Loading state ───────────────────────────────────────────
         function setLoading(active) {
             submitBtn.disabled = active;
+            const iconEl = document.getElementById('btn-icon');
             if (active) {
                 btnText.textContent = 'جارٍ التحقق…';
-                btnIcon.outerHTML   =
-                    '<span class="spinner" id="btn-icon" aria-hidden="true"></span>';
+                if (iconEl && iconEl.parentNode) {
+                    iconEl.outerHTML = '<span class="spinner" id="btn-icon" aria-hidden="true"></span>';
+                }
             } else {
                 btnText.textContent = 'تسجيل الدخول';
-                document.getElementById('btn-icon')?.remove();
-                submitBtn.insertAdjacentHTML(
-                    'beforeend',
-                    '<i class="fa-solid fa-arrow-left text-xs" id="btn-icon"></i>'
-                );
+                if (iconEl && iconEl.parentNode) {
+                    iconEl.outerHTML = '<i class="fa-solid fa-arrow-left text-xs" id="btn-icon"></i>';
+                } else {
+                    document.getElementById('btn-icon')?.remove();
+                    submitBtn.insertAdjacentHTML('beforeend', '<i class="fa-solid fa-arrow-left text-xs" id="btn-icon"></i>');
+                }
             }
         }
 
