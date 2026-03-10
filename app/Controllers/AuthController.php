@@ -138,7 +138,16 @@ class AuthController extends Controller
             }
 
             // --- Build secure session -----------------------------------------------
-            session_regenerate_id(true);
+            // session_regenerate_id(true) can fail with PgBouncer/pooler session handlers
+            try {
+                session_regenerate_id(true);
+            } catch (\Throwable $e) {
+                // If regeneration fails (e.g. DB session + pooler), start fresh manually
+                $oldData = $_SESSION;
+                session_destroy();
+                session_start();
+                $_SESSION = $oldData;
+            }
 
             $_SESSION['user_id']       = (int)    $user['id'];
             $_SESSION['username']      = (string) $user['username'];
