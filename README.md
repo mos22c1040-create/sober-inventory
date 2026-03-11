@@ -1,6 +1,6 @@
 # Sober Inventory
 
-A PHP/MySQL MVC inventory management system with authentication, products, categories, purchases, reports, user management, and barcode scanning (USB scanner + camera, optional mobile-to-PC bridge).
+A PHP MVC inventory management system with authentication, products, categories, purchases, reports, user management, and barcode scanning (USB scanner + camera, optional mobile-to-PC bridge).
 
 ---
 
@@ -19,8 +19,10 @@ A PHP/MySQL MVC inventory management system with authentication, products, categ
 
 ## Requirements
 
-- **PHP** 7.4+ with PDO MySQL
-- **MySQL** 5.7+ or MariaDB
+- **PHP** 7.4+ with PDO enabled
+- **Database (choose one):**
+  - MySQL 5.7+ / MariaDB
+  - PostgreSQL (recommended for Railway/Supabase)
 - Web server (Apache/Nginx) or PHP built-in server
 
 ---
@@ -36,20 +38,28 @@ cd sober-inventory
 
 ### 2. Database
 
-Create a MySQL database and load the schema:
+#### Option A — MySQL (local)
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE inventory_pos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql -u root -p inventory_pos < storage/schema.sql
 ```
 
-**جدول سجل النشاط (activity_log):** إذا ظهر خطأ بأن الجدول غير موجود، شغّل من جذر المشروع:
+#### Option B — PostgreSQL (Supabase/Railway)
+
+Use a PostgreSQL connection string in `.env`:
+
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/postgres
+```
+
+> Keep `DB_*` values empty when using `DATABASE_URL`.
+
+**activity_log patch:** if you see an `activity_log` table error, run:
 
 ```bash
 php storage/run_patch_activity_log.php
 ```
-
-(على ويندوز إذا كان `mysql` غير مضاف في PATH، استخدم الأمر أعلاه بدلاً من `mysql ... < storage/patch_activity_log.sql`.)
 
 ### 3. Environment
 
@@ -59,14 +69,21 @@ Copy the example env file and set your database credentials:
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` (choose one mode only):
 
 ```env
+# --- MySQL mode ---
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=inventory_pos
 DB_USERNAME=root
 DB_PASSWORD=your_password
+
+# --- PostgreSQL mode (Supabase/Railway) ---
+# DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/postgres
+
+APP_ENV=development
+SESSION_DRIVER=file
 ```
 
 ### 4. Web server
@@ -102,6 +119,29 @@ VALUES (
 ```
 
 Change the password after first login.
+
+---
+
+## Deploy (Railway + Supabase)
+
+1. Push your latest code to `main`.
+2. In Railway, connect the GitHub repo.
+3. Set environment variables in Railway:
+   - `APP_ENV=production`
+   - `DATABASE_URL=postgresql://...` (from Supabase or Railway Postgres)
+   - `SESSION_DRIVER=file` (or `database` for serverless flows)
+4. Redeploy and verify the app health using the checklist below.
+
+### Post-deploy Smoke Test
+
+Use this checklist after every deploy:
+- Open `/login` and sign in with admin.
+- Open `/dashboard` and confirm cards/charts load.
+- Open `/products` and test barcode search.
+- Open `/sales/create`, complete a sale, and check `/sales/receipt?id=...`.
+- Verify role access: cashier cannot access admin pages.
+
+If you want a reusable checklist file, see `docs/DEPLOY_CHECKLIST.md`.
 
 ---
 
