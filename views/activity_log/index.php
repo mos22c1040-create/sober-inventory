@@ -10,6 +10,9 @@ $actionLabels = [
     'user.delete'    => 'حذف مستخدم',
     'user.password'  => 'تغيير كلمة مرور',
     'purchase.create'=> 'تسجيل مشتريات',
+    'expense.create' => 'إضافة مصروف',
+    'expense.update' => 'تعديل مصروف',
+    'expense.delete' => 'حذف مصروف',
 ];
 require BASE_PATH . '/views/layouts/header.php';
 require BASE_PATH . '/views/layouts/sidebar.php';

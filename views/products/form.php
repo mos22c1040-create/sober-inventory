@@ -84,9 +84,23 @@
                 <input type="number" name="low_stock_threshold" min="0" value="<?= htmlspecialchars($product['low_stock_threshold'] ?? '5', ENT_QUOTES, 'UTF-8') ?>" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500">
             </div>
         </div>
+        <!-- وحدة القياس -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">وحدة القياس</label>
+            <select name="unit" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500">
+                <?php foreach (['قطعة','كيلو','جرام','لتر','مل','علبة','كرتون','صندوق','زجاجة','كيس','متر','طن'] as $u): ?>
+                <option value="<?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>" <?= ($product['unit'] ?? 'قطعة') === $u ? 'selected' : '' ?>><?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <!-- وصف المنتج -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">وصف المنتج (اختياري)</label>
+            <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500 resize-none" placeholder="تفاصيل إضافية عن المنتج..."><?= htmlspecialchars($product['description'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+        </div>
         <div class="flex gap-3 pt-4">
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"><?= $product ? 'حفظ التعديلات' : 'إضافة' ?></button>
-            <a href="/products" class="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">إلغاء</a>
+            <button type="submit" id="submit-btn" class="min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-semibold btn-primary focus:ring-2 focus:ring-offset-2 transition-colors duration-200 cursor-pointer" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));"><?= $product ? 'حفظ التعديلات' : 'إضافة المنتج' ?></button>
+            <a href="/products" class="min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium border flex items-center transition-colors duration-200 cursor-pointer" style="border-color: rgb(var(--border)); color: rgb(var(--foreground));">إلغاء</a>
         </div>
     </form>
 </div>
@@ -201,6 +215,8 @@
         body.quantity = parseInt(body.quantity, 10) || 0;
         body.low_stock_threshold = parseInt(body.low_stock_threshold, 10) || 5;
         body.category_id = body.category_id || null;
+        body.unit = body.unit || 'قطعة';
+        body.description = body.description || null;
         var url = body.id ? '/api/products/update' : '/api/products';
         var res  = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         var json = await res.json();

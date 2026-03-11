@@ -76,7 +76,8 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
                     <td class="px-6 py-4 text-sm text-right font-medium text-slate-800"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$p['price'], 0) ?></td>
                     <td class="px-6 py-4 text-right">
                         <span class="text-sm font-medium <?= $lowStock ? 'text-red-600' : 'text-slate-800' ?>"><?= (int)$p['quantity'] ?></span>
-                        <?php if ($lowStock): ?><span class="ms-1 text-xs text-red-500">(منخفض)</span><?php endif; ?>
+                        <span class="text-xs ms-1" style="color: rgb(var(--muted-foreground));"><?= htmlspecialchars($p['unit'] ?? 'قطعة', ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php if ($lowStock): ?><span class="ms-1 text-xs text-red-500 font-bold">(منخفض)</span><?php endif; ?>
                     </td>
                     <?php if ($isAdmin): ?>
                     <td class="px-6 py-4 text-center">

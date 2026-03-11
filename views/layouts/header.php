@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="/css/app.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <style>
         /* Design system: Industrial/Utilitarian — skills/frontend-design, ui-ux-pro-max */
         body { font-family: 'Tajawal', sans-serif; font-size: 16px; line-height: 1.6; color: rgb(var(--foreground)); background: rgb(var(--background)); }

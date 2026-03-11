@@ -39,10 +39,67 @@ class ReportController extends Controller
             : $db->query(
                 "SELECT p.name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 10"
             )->fetchAll();
+
+        // Profit summary — revenue vs cost
+        $profitRow = $isPgsql
+            ? $db->query(
+                "SELECT
+                    SUM(si.quantity * si.unit_price) AS total_revenue,
+                    SUM(si.quantity * p.cost)        AS total_cost,
+                    SUM(si.quantity * (si.unit_price - p.cost)) AS gross_profit
+                 FROM sale_items si
+                 JOIN products p ON si.product_id = p.id
+                 JOIN sales s ON si.sale_id = s.id
+                 WHERE s.status = 'paid'
+                   AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days')"
+            )->fetch()
+            : $db->query(
+                "SELECT
+                    SUM(si.quantity * si.unit_price) AS total_revenue,
+                    SUM(si.quantity * p.cost)        AS total_cost,
+                    SUM(si.quantity * (si.unit_price - p.cost)) AS gross_profit
+                 FROM sale_items si
+                 JOIN products p ON si.product_id = p.id
+                 JOIN sales s ON si.sale_id = s.id
+                 WHERE s.status = 'paid'
+                   AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+            )->fetch();
+
+        // Top profitable products
+        $profitByProduct = $isPgsql
+            ? $db->query(
+                "SELECT p.name, SUM(si.quantity) AS qty_sold,
+                    SUM(si.quantity * si.unit_price) AS revenue,
+                    SUM(si.quantity * p.cost) AS cost,
+                    SUM(si.quantity * (si.unit_price - p.cost)) AS profit
+                 FROM sale_items si
+                 JOIN products p ON si.product_id = p.id
+                 JOIN sales s ON si.sale_id = s.id
+                 WHERE s.status = 'paid'
+                   AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days')
+                 GROUP BY si.product_id, p.name
+                 ORDER BY profit DESC LIMIT 10"
+            )->fetchAll()
+            : $db->query(
+                "SELECT p.name, SUM(si.quantity) AS qty_sold,
+                    SUM(si.quantity * si.unit_price) AS revenue,
+                    SUM(si.quantity * p.cost) AS cost,
+                    SUM(si.quantity * (si.unit_price - p.cost)) AS profit
+                 FROM sale_items si
+                 JOIN products p ON si.product_id = p.id
+                 JOIN sales s ON si.sale_id = s.id
+                 WHERE s.status = 'paid'
+                   AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                 GROUP BY si.product_id
+                 ORDER BY profit DESC LIMIT 10"
+            )->fetchAll();
+
         $this->view('reports/index', [
-            'title' => 'التقارير',
-            'salesByDay' => $salesByDay,
-            'topProducts' => $topProducts,
+            'title'           => 'التقارير',
+            'salesByDay'      => $salesByDay,
+            'topProducts'     => $topProducts,
+            'profitRow'       => $profitRow ?: ['total_revenue' => 0, 'total_cost' => 0, 'gross_profit' => 0],
+            'profitByProduct' => $profitByProduct ?: [],
         ]);
     }
 

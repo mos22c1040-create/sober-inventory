@@ -123,6 +123,14 @@ $router->get('/purchases', 'PurchaseController@index');
 $router->get('/purchases/create', 'PurchaseController@create');
 $router->post('/api/purchases', 'PurchaseController@store');
 
+// Expenses
+$router->get('/expenses', 'ExpenseController@index');
+$router->get('/expenses/create', 'ExpenseController@create');
+$router->get('/expenses/edit', 'ExpenseController@edit');
+$router->post('/api/expenses', 'ExpenseController@store');
+$router->post('/api/expenses/update', 'ExpenseController@update');
+$router->post('/api/expenses/delete', 'ExpenseController@delete');
+
 // Reports
 $router->get('/reports', 'ReportController@index');
 $router->get('/reports/export/sales', 'ReportController@exportSalesCsv');

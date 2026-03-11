@@ -86,15 +86,18 @@ class Product
     {
         $db = Database::getInstance();
         $db->query(
-            "INSERT INTO products (category_id, name, sku, price, cost, quantity, low_stock_threshold) VALUES (:category_id, :name, :sku, :price, :cost, :quantity, :low_stock_threshold)",
+            "INSERT INTO products (category_id, name, sku, price, cost, quantity, low_stock_threshold, unit, description)
+             VALUES (:category_id, :name, :sku, :price, :cost, :quantity, :low_stock_threshold, :unit, :description)",
             [
-                ':category_id' => !empty($data['category_id']) ? (int) $data['category_id'] : null,
-                ':name' => $data['name'],
-                ':sku' => $data['sku'] ?? null,
-                ':price' => (float) ($data['price'] ?? 0),
-                ':cost' => (float) ($data['cost'] ?? 0),
-                ':quantity' => (int) ($data['quantity'] ?? 0),
+                ':category_id'         => !empty($data['category_id']) ? (int) $data['category_id'] : null,
+                ':name'                => $data['name'],
+                ':sku'                 => $data['sku'] ?? null,
+                ':price'               => (float) ($data['price'] ?? 0),
+                ':cost'                => (float) ($data['cost'] ?? 0),
+                ':quantity'            => (int) ($data['quantity'] ?? 0),
                 ':low_stock_threshold' => (int) ($data['low_stock_threshold'] ?? 5),
+                ':unit'                => $data['unit'] ?? 'قطعة',
+                ':description'         => $data['description'] ?? null,
             ]
         );
         return (int) $db->getConnection()->lastInsertId();
@@ -104,16 +107,21 @@ class Product
     {
         $db = Database::getInstance();
         $stmt = $db->query(
-            "UPDATE products SET category_id = :category_id, name = :name, sku = :sku, price = :price, cost = :cost, quantity = :quantity, low_stock_threshold = :low_stock_threshold WHERE id = :id",
+            "UPDATE products SET category_id = :category_id, name = :name, sku = :sku, price = :price,
+              cost = :cost, quantity = :quantity, low_stock_threshold = :low_stock_threshold,
+              unit = :unit, description = :description
+             WHERE id = :id",
             [
-                ':id' => $id,
-                ':category_id' => !empty($data['category_id']) ? (int) $data['category_id'] : null,
-                ':name' => $data['name'],
-                ':sku' => $data['sku'] ?? null,
-                ':price' => (float) ($data['price'] ?? 0),
-                ':cost' => (float) ($data['cost'] ?? 0),
-                ':quantity' => (int) ($data['quantity'] ?? 0),
+                ':id'                  => $id,
+                ':category_id'         => !empty($data['category_id']) ? (int) $data['category_id'] : null,
+                ':name'                => $data['name'],
+                ':sku'                 => $data['sku'] ?? null,
+                ':price'               => (float) ($data['price'] ?? 0),
+                ':cost'                => (float) ($data['cost'] ?? 0),
+                ':quantity'            => (int) ($data['quantity'] ?? 0),
                 ':low_stock_threshold' => (int) ($data['low_stock_threshold'] ?? 5),
+                ':unit'                => $data['unit'] ?? 'قطعة',
+                ':description'         => $data['description'] ?? null,
             ]
         );
         return $stmt->rowCount() > 0;

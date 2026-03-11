@@ -8,6 +8,7 @@
         'categories' => strpos($path, '/categories') === 0,
         'sales'      => strpos($path, '/sales') === 0,
         'purchases'  => strpos($path, '/purchases') === 0,
+        'expenses'   => strpos($path, '/expenses') === 0,
         'reports'    => strpos($path, '/reports') === 0,
         'users'      => strpos($path, '/users') === 0,
         'activity'   => strpos($path, '/activity-log') === 0,
@@ -60,6 +61,10 @@
             <a href="/purchases" class="flex items-center px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-xl <?= $nav['purchases'] ? $activeClass : $inactiveClass ?> group transition-colors duration-200 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-[#0f172a] cursor-pointer">
                 <i class="fa-solid fa-truck-ramp-box w-5 text-center ms-3 <?= $nav['purchases'] ? $activeIcon : $inactiveIcon ?>" aria-hidden="true"></i>
                 المشتريات
+            </a>
+            <a href="/expenses" class="flex items-center px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-xl <?= $nav['expenses'] ? $activeClass : $inactiveClass ?> group transition-colors duration-200 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-[#0f172a] cursor-pointer">
+                <i class="fa-solid fa-money-bill-transfer w-5 text-center ms-3 <?= $nav['expenses'] ? $activeIcon : $inactiveIcon ?>" aria-hidden="true"></i>
+                المصروفات
             </a>
 
             <div class="my-3 border-t border-slate-700/60"></div>

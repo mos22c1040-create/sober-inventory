@@ -74,49 +74,76 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 <!-- مخطط وجدول المبيعات -->
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
     <div class="xl:col-span-2 app-card-flat p-6 flex flex-col">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex justify-between items-center mb-4">
             <div>
                 <h3 class="text-lg font-bold" style="color: rgb(var(--foreground));">نظرة عامة على المبيعات</h3>
                 <p class="text-xs font-medium mt-1" style="color: rgb(var(--muted-foreground));">إيرادات آخر 7 أيام</p>
             </div>
-            <span class="text-sm bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-slate-600 font-medium">آخر 7 أيام</span>
-        </div>
-        
-        <!-- رسم المبيعات (آخر 7 أيام) -->
-        <?php
-        $chartDays = $dailyTotals ?? [];
-        $maxTotal = 1;
-        $sumTotal = 0;
-        foreach ($chartDays as $d) {
-            if ($d['total'] > $maxTotal) $maxTotal = $d['total'];
-            $sumTotal += $d['total'];
-        }
-        $isToday = date('Y-m-d');
-        $noSales = ($sumTotal == 0);
-        ?>
-        <?php if ($noSales): ?>
-        <p class="text-sm text-slate-500 mb-4 py-2 px-4 bg-slate-50 rounded-xl border border-slate-100">لا توجد مبيعات في آخر 7 أيام.</p>
-        <?php endif; ?>
-        <div class="flex-1 min-h-[250px] flex items-end justify-between gap-3 px-2 pb-2">
-            <?php foreach ($chartDays as $day): 
-                $pct = $maxTotal > 0 ? round(($day['total'] / $maxTotal) * 100) : 0;
-                if ($pct < 6 && $day['total'] > 0) $pct = 6;
-                if ($day['total'] == 0) $pct = 4;
-                $isCurrentDay = ($day['date'] === $isToday);
-                $barClass = $isCurrentDay ? 'bg-gradient-to-t from-blue-600 to-blue-400 shadow-md border-t-2 border-blue-400' : ($day['total'] > 0 ? 'bg-blue-100 hover:bg-blue-200' : 'bg-blue-50 hover:bg-blue-100');
+            <?php
+            $chartDays = $dailyTotals ?? [];
+            $weekTotal = array_sum(array_column($chartDays, 'total'));
             ?>
-            <div class="w-full <?= $barClass ?> rounded-t-lg transition-colors relative group flex flex-col items-center justify-end" style="height: <?= $pct ?>%; min-height: 20px;">
-                <div class="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs py-1.5 px-3 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity font-bold z-10 whitespace-nowrap"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$day['total'], 0) ?></div>
+            <div class="text-left">
+                <p class="text-xs font-medium" style="color: rgb(var(--muted-foreground));">إجمالي الأسبوع</p>
+                <p class="text-lg font-bold" style="color: rgb(var(--primary));"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$weekTotal, 0) ?></p>
             </div>
-            <?php endforeach; ?>
         </div>
-        <div class="flex justify-between text-xs font-semibold text-slate-400 mt-4 px-2 border-t border-gray-100 pt-4">
-            <?php foreach ($chartDays as $day): 
-                $isCurrentDay = ($day['date'] === $isToday);
-            ?>
-            <span class="w-full text-center <?= $isCurrentDay ? 'text-blue-600 font-bold' : '' ?>"><?= htmlspecialchars($day['label'], ENT_QUOTES, 'UTF-8') ?></span>
-            <?php endforeach; ?>
+        <div class="relative flex-1 min-h-[240px]">
+            <canvas id="salesChart" style="width:100%;height:100%;"></canvas>
         </div>
+        <script>
+        (function(){
+            var labels = <?= json_encode(array_column($chartDays, 'label'), JSON_UNESCAPED_UNICODE) ?>;
+            var values = <?= json_encode(array_map(fn($d) => (float)$d['total'], $chartDays)) ?>;
+            var sym    = <?= json_encode($currencySymbol, JSON_UNESCAPED_UNICODE) ?>;
+            var canvas = document.getElementById('salesChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            var ctx = canvas.getContext('2d');
+            var grad = ctx.createLinearGradient(0, 0, 0, 240);
+            grad.addColorStop(0, 'rgba(59,130,246,0.25)');
+            grad.addColorStop(1, 'rgba(59,130,246,0.01)');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        borderColor: 'rgb(59,130,246)',
+                        backgroundColor: grad,
+                        borderWidth: 2.5,
+                        pointBackgroundColor: 'rgb(59,130,246)',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            rtl: true,
+                            callbacks: {
+                                label: function(ctx) { return ' ' + sym + ' ' + ctx.parsed.y.toLocaleString(); }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { family: 'Tajawal, sans-serif', size: 12 } } },
+                        y: {
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: {
+                                font: { family: 'Tajawal, sans-serif', size: 11 },
+                                callback: function(v) { return sym + ' ' + Number(v).toLocaleString(); }
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+        </script>
     </div>
 
     <!-- آخر المبيعات -->
