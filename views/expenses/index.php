@@ -18,6 +18,15 @@
     </a>
 </div>
 
+<?php if (!empty($needsMigration)): ?>
+<div class="rounded-lg p-4 mb-6 border text-sm font-medium bg-amber-50 border-amber-200 text-amber-800" role="alert">
+    <i class="fa-solid fa-triangle-exclamation me-2" aria-hidden="true"></i>
+    <strong>يلزم تحديث قاعدة البيانات:</strong>
+    شغّل ملف <code class="bg-amber-100 px-1.5 py-0.5 rounded font-mono">storage/patch_expenses.pgsql</code> على Supabase لإنشاء جدول المصروفات.
+    <a href="https://supabase.com/dashboard/project/tamckbgieehtghsftxaq/sql" target="_blank" rel="noopener" class="underline font-bold ms-2">افتح SQL Editor</a>
+</div>
+<?php endif; ?>
+
 <!-- ملخص هذا الشهر + تصنيفات -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
     <div class="app-card p-5">

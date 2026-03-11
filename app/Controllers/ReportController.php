@@ -40,7 +40,10 @@ class ReportController extends Controller
                 "SELECT p.name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 10"
             )->fetchAll();
 
-        // Profit summary — revenue vs cost
+        // Profit summary — revenue vs cost (wrapped in try/catch in case columns don't exist yet)
+        $profitRow = null;
+        $profitByProduct = [];
+        try {
         $profitRow = $isPgsql
             ? $db->query(
                 "SELECT
@@ -65,7 +68,6 @@ class ReportController extends Controller
                    AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
             )->fetch();
 
-        // Top profitable products
         $profitByProduct = $isPgsql
             ? $db->query(
                 "SELECT p.name, SUM(si.quantity) AS qty_sold,
@@ -93,6 +95,9 @@ class ReportController extends Controller
                  GROUP BY si.product_id
                  ORDER BY profit DESC LIMIT 10"
             )->fetchAll();
+        } catch (\PDOException $e) {
+            // profit columns unavailable — skip silently
+        }
 
         $this->view('reports/index', [
             'title'           => 'التقارير',

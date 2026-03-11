@@ -15,17 +15,27 @@ class ExpenseController extends Controller
     {
         AuthHelper::requireRole('admin');
         $page   = max(1, (int)($_GET['page'] ?? 1));
-        $result = Expense::paginate($page, 25);
-        $summary = Expense::summaryByCategory();
-        $monthlyTotal = Expense::monthlyTotal();
+
+        try {
+            $result       = Expense::paginate($page, 25);
+            $summary      = Expense::summaryByCategory();
+            $monthlyTotal = Expense::monthlyTotal();
+            $needsMigration = false;
+        } catch (\PDOException $e) {
+            $result       = ['data' => [], 'total' => 0, 'page' => 1, 'perPage' => 25, 'pages' => 1];
+            $summary      = [];
+            $monthlyTotal = 0.0;
+            $needsMigration = true;
+        }
 
         $this->view('expenses/index', [
-            'title'        => 'المصروفات',
-            'expenses'     => $result['data'],
-            'pagination'   => $result,
-            'summary'      => $summary,
-            'monthlyTotal' => $monthlyTotal,
-            'csrfToken'    => Security::generateCsrfToken(),
+            'title'           => 'المصروفات',
+            'expenses'        => $result['data'],
+            'pagination'      => $result,
+            'summary'         => $summary,
+            'monthlyTotal'    => $monthlyTotal,
+            'csrfToken'       => Security::generateCsrfToken(),
+            'needsMigration'  => $needsMigration,
         ]);
     }
 
@@ -62,6 +72,7 @@ class ExpenseController extends Controller
         AuthHelper::requireRole('admin');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
+            return;
         }
         $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         if (!Security::validateCsrfToken($input['csrf_token'] ?? '')) {
