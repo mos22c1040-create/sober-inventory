@@ -11,7 +11,6 @@ class ActivityLogController extends Controller
 {
     public function index(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         $entries = ActivityLog::getRecent(200);

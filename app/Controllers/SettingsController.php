@@ -6,12 +6,12 @@ namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
 use App\Helpers\Security;
+use App\Models\AppSetting;
 
 class SettingsController extends Controller
 {
     public function index(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         $settings = (array) include BASE_PATH . '/config/app_settings.php';
@@ -25,7 +25,6 @@ class SettingsController extends Controller
 
     public function store(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -37,8 +36,8 @@ class SettingsController extends Controller
             $this->jsonResponse(['error' => 'رمز الأمان منتهٍ.'], 403);
         }
 
-        $appName = trim(Security::sanitizeString((string) ($input['app_name'] ?? '')));
-        $currencySymbol = trim(Security::sanitizeString((string) ($input['currency_symbol'] ?? '')));
+        $appName        = trim(Security::sanitizeString((string) ($input['app_name']        ?? ''), 100));
+        $currencySymbol = trim(Security::sanitizeString((string) ($input['currency_symbol'] ?? ''), 10));
 
         if ($appName === '') {
             $appName = 'نظام المخزون';
@@ -52,13 +51,25 @@ class SettingsController extends Controller
             'currency_symbol' => $currencySymbol,
         ];
 
-        $dir = BASE_PATH . '/storage';
+        // Primary: persist to the database (survives container restarts on Railway).
+        $savedToDb = AppSetting::setMany($data);
+
+        // Fallback: also write settings.json for local/offline environments.
+        $dir  = BASE_PATH . '/storage';
         if (!is_dir($dir)) {
             @mkdir($dir, 0755, true);
         }
-        $file = $dir . '/settings.json';
-        if (@file_put_contents($file, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)) === false) {
-            $this->jsonResponse(['error' => 'فشل حفظ الإعدادات.'], 500);
+        @file_put_contents(
+            $dir . '/settings.json',
+            json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+        );
+
+        if (!$savedToDb) {
+            // DB table missing — settings.json fallback was used; inform the user.
+            $this->jsonResponse([
+                'success' => true,
+                'message' => 'تم حفظ الإعدادات (محلياً). لتثبيت الإعدادات على الخادم شغّل ملف patch_settings_table.pgsql.',
+            ]);
         }
 
         $this->jsonResponse(['success' => true, 'message' => 'تم حفظ الإعدادات.']);

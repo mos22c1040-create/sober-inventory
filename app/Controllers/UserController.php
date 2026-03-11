@@ -29,7 +29,6 @@ class UserController extends Controller
 
     public function index(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         $users = User::all();
@@ -47,7 +46,6 @@ class UserController extends Controller
 
     public function create(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         $this->view('users/form', [
@@ -63,7 +61,6 @@ class UserController extends Controller
 
     public function store(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -83,8 +80,8 @@ class UserController extends Controller
 
         // Password required on create
         $password = trim((string) ($input['password'] ?? ''));
-        if (strlen($password) < 6) {
-            $this->jsonResponse(['error' => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.'], 422);
+        if (strlen($password) < 8) {
+            $this->jsonResponse(['error' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.'], 422);
         }
 
         // Unique email check
@@ -110,7 +107,6 @@ class UserController extends Controller
 
     public function edit(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         $id   = (int) ($_GET['id'] ?? 0);
@@ -135,7 +131,6 @@ class UserController extends Controller
 
     public function update(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -187,7 +182,6 @@ class UserController extends Controller
 
     public function changePassword(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -208,8 +202,8 @@ class UserController extends Controller
             $this->jsonResponse(['error' => 'المستخدم غير موجود.'], 404);
         }
 
-        if (strlen($password) < 6) {
-            $this->jsonResponse(['error' => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.'], 422);
+        if (strlen($password) < 8) {
+            $this->jsonResponse(['error' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.'], 422);
         }
 
         if ($password !== $confirm) {
@@ -231,7 +225,6 @@ class UserController extends Controller
 
     public function delete(): void
     {
-        AuthHelper::checkAuth();
         AuthHelper::requireRole('admin');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

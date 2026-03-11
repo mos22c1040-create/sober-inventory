@@ -53,8 +53,8 @@ class ProfileController extends Controller
             $this->jsonResponse(['error' => 'كلمة المرور الحالية غير صحيحة.'], 400);
         }
 
-        if (strlen($new) < 6) {
-            $this->jsonResponse(['error' => 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.'], 422);
+        if (strlen($new) < 8) {
+            $this->jsonResponse(['error' => 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.'], 422);
         }
 
         if ($new !== $confirm) {

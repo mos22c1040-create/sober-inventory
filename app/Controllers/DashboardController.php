@@ -63,13 +63,14 @@ class DashboardController extends Controller
         }
 
         $this->view('dashboard/index', [
-            'title' => 'نظرة عامة على لوحة التحكم',
-            'todaySales' => $todaySales,
-            'todayCount' => $todayCount,
+            'title'        => 'نظرة عامة على لوحة التحكم',
+            'todaySales'   => $todaySales,
+            'todayCount'   => $todayCount,
             'productCount' => $productCount,
-            'lowStockCount' => $lowStockCount,
-            'recentSales' => $recentSales,
-            'dailyTotals' => $dailyTotals ?? [],
+            'lowStockCount'=> $lowStockCount,
+            'recentSales'  => $recentSales,
+            'dailyTotals'  => $dailyTotals ?? [],
+            'loadChartJs'  => true,
         ]);
     }
 }

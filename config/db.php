@@ -53,16 +53,20 @@ if (
     $dbname       = ltrim($url['path'] ?? '/postgres', '/');
 
     // ─────────────────────────────────────────────────────────────────────────
-    // إصلاح مشكلة IPv6 على Railway عند الاتصال بـ Supabase
+    // IPv6 fix for Railway → Supabase connections.
     //
-    // عندما يكون الرابط Direct Connection (db.PROJECT_REF.supabase.co:5432)
-    // تحاول Railway الاتصال عبر IPv6 وتفشل برسالة "Network is unreachable".
+    // When DATABASE_URL points to the Direct Connection host
+    // (db.PROJECT_REF.supabase.co:5432) Railway may attempt IPv6 and fail.
     //
-    // الحل: نحوّل تلقائياً إلى Transaction Pooler الذي يدعم IPv4:
-    //   host → aws-0-REGION.pooler.supabase.com
-    //   port → 6543
-    //   user → postgres.PROJECT_REF
+    // Resolution strategy (fastest first):
+    //   1. POOLER_HOST env var — set once on Railway to skip all DNS work.
+    //   2. Supabase direct hostname → auto-switch to Transaction Pooler (IPv4).
+    //   3. Other hosts — plain gethostbyname() to force IPv4.
     // ─────────────────────────────────────────────────────────────────────────
+
+    // Fast path: operator pre-set the pooler host — zero DNS calls needed.
+    $envPoolerHost = $_ENV['POOLER_HOST'] ?? getenv('POOLER_HOST') ?: '';
+
     $isSupabaseDirect = (bool) preg_match(
         '/^db\.([a-z0-9]+)\.supabase\.co$/i',
         $originalHost,
@@ -72,37 +76,40 @@ if (
     if ($isSupabaseDirect) {
         $projectRef = $matches[1];
 
-        // نحدد الـ Region من خلال DNS lookup على أشهر Regions في Supabase
-        $regions = [
-            'us-east-1',
-            'us-west-1',
-            'eu-west-2',
-            'eu-central-1',
-            'ap-southeast-1',
-            'ap-northeast-1',
-        ];
+        if ($envPoolerHost !== '') {
+            // Use the pre-configured pooler host — no DNS lookup required.
+            $poolerHost = $envPoolerHost;
+        } else {
+            // Probe common Supabase regions to find a resolvable pooler host.
+            $regions = [
+                'us-east-1',
+                'us-west-1',
+                'eu-west-2',
+                'eu-central-1',
+                'ap-southeast-1',
+                'ap-northeast-1',
+            ];
 
-        $poolerHost = null;
-        foreach ($regions as $region) {
-            $candidate = "aws-0-{$region}.pooler.supabase.com";
-            $resolved  = gethostbyname($candidate);
-            // إذا أرجع gethostbyname عنوان IP (يختلف عن الاسم) فالـ DNS يعمل
-            if ($resolved !== $candidate) {
-                $poolerHost = $candidate;
-                break;
+            $poolerHost = null;
+            foreach ($regions as $region) {
+                $candidate = "aws-0-{$region}.pooler.supabase.com";
+                $resolved  = gethostbyname($candidate);
+                if ($resolved !== $candidate) {
+                    $poolerHost = $candidate;
+                    break;
+                }
             }
-        }
 
-        // إذا لم نجد أي region، نستخدم us-east-1 احتياطياً
-        if ($poolerHost === null) {
-            $poolerHost = 'aws-0-us-east-1.pooler.supabase.com';
+            if ($poolerHost === null) {
+                $poolerHost = 'aws-0-us-east-1.pooler.supabase.com';
+            }
         }
 
         $connectHost = $poolerHost;
         $connectPort = '6543';
         $connectUser = "postgres.{$projectRef}";
     } else {
-        // الرابط إما Pooler بالفعل أو ليس Supabase — نفرض IPv4 فقط
+        // Already a pooler URL or non-Supabase host — force IPv4 resolution.
         $resolved    = gethostbyname($originalHost);
         $connectHost = ($resolved !== $originalHost) ? $resolved : $originalHost;
         $connectPort = (string) $port;

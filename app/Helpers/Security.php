@@ -41,6 +41,20 @@ class Security
         // Restrict browser features: camera allowed for same-origin (barcode scan), others disabled
         header('Permissions-Policy: camera=(self), geolocation=(), microphone=(), payment=()');
 
+        // Content-Security-Policy: restricts resource loading origins to self + trusted CDNs.
+        // script-src allows jsdelivr (Chart.js), fonts.googleapis.com, cdnjs (html5-qrcode).
+        // style-src allows Google Fonts and inline styles required by Tailwind.
+        header(
+            "Content-Security-Policy: " .
+            "default-src 'self'; " .
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; " .
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " .
+            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+            "img-src 'self' data: blob:; " .
+            "connect-src 'self'; " .
+            "frame-ancestors 'none';"
+        );
+
         $env = $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '';
         if ($env === 'production') {
             header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
@@ -54,19 +68,19 @@ class Security
     /**
      * Sanitise a string for safe HTML output.
      *
-     * Strips HTML tags, trims whitespace, and escapes remaining special chars.
+     * Strips HTML tags, trims whitespace, truncates to $maxLen characters,
+     * and escapes remaining special chars.
      * Use on EVERY piece of user-supplied text before rendering in a view.
      *
-     * @param  string $value  Raw user input
-     * @return string         HTML-safe output
+     * @param  string $value   Raw user input
+     * @param  int    $maxLen  Maximum character length (default 500)
+     * @return string          HTML-safe output
      */
-    public static function sanitizeString(string $value): string
+    public static function sanitizeString(string $value, int $maxLen = 500): string
     {
-        return htmlspecialchars(
-            strip_tags(trim($value)),
-            ENT_QUOTES | ENT_SUBSTITUTE,
-            'UTF-8'
-        );
+        $trimmed = mb_substr(strip_tags(trim($value)), 0, $maxLen, 'UTF-8');
+
+        return htmlspecialchars($trimmed, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     /**
