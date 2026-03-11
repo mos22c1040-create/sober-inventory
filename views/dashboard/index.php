@@ -13,60 +13,60 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8 stagger-children">
     
-    <div class="app-card p-6 hover:-translate-y-0.5 group">
+    <div class="app-card p-6 group">
         <div class="flex justify-between items-start">
             <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">مبيعات اليوم</p>
-                <h3 class="stat-value text-2xl md:text-3xl font-bold text-slate-800 mt-1.5"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($todaySales ?? 0), 0) ?></h3>
+                <p class="text-xs font-bold uppercase tracking-widest" style="color: rgb(var(--muted-foreground));">مبيعات اليوم</p>
+                <h3 class="stat-value text-2xl md:text-3xl font-bold mt-1.5" style="color: rgb(var(--foreground));"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($todaySales ?? 0), 0) ?></h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
-                <i class="fa-solid fa-money-bill-wave text-lg"></i>
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
+                <i class="fa-solid fa-money-bill-wave text-lg" aria-hidden="true"></i>
             </div>
         </div>
-        <p class="mt-4 text-sm text-slate-500 font-medium"><?= (int)($todayCount ?? 0) ?> فاتورة اليوم</p>
+        <p class="mt-4 text-sm font-medium" style="color: rgb(var(--muted-foreground));"><?= (int)($todayCount ?? 0) ?> فاتورة اليوم</p>
     </div>
 
-    <div class="app-card p-6 hover:-translate-y-0.5 group">
+    <div class="app-card p-6 group">
         <div class="flex justify-between items-start">
             <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">عدد الفواتير</p>
-                <h3 class="stat-value text-2xl md:text-3xl font-bold text-slate-800 mt-1.5"><?= (int)($todayCount ?? 0) ?></h3>
+                <p class="text-xs font-bold uppercase tracking-widest" style="color: rgb(var(--muted-foreground));">عدد الفواتير</p>
+                <h3 class="stat-value text-2xl md:text-3xl font-bold mt-1.5" style="color: rgb(var(--foreground));"><?= (int)($todayCount ?? 0) ?></h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
-                <i class="fa-solid fa-receipt text-lg"></i>
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
+                <i class="fa-solid fa-receipt text-lg" aria-hidden="true"></i>
             </div>
         </div>
-        <p class="mt-4 text-sm text-slate-500 font-medium">المبيعات المكتملة اليوم</p>
+        <p class="mt-4 text-sm font-medium" style="color: rgb(var(--muted-foreground));">المبيعات المكتملة اليوم</p>
     </div>
 
-    <div class="app-card p-6 hover:-translate-y-0.5 group">
+    <div class="app-card p-6 group">
         <div class="flex justify-between items-start">
             <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">إجمالي المنتجات</p>
-                <h3 class="stat-value text-2xl md:text-3xl font-bold text-slate-800 mt-1.5"><?= (int)($productCount ?? 0) ?></h3>
+                <p class="text-xs font-bold uppercase tracking-widest" style="color: rgb(var(--muted-foreground));">إجمالي المنتجات</p>
+                <h3 class="stat-value text-2xl md:text-3xl font-bold mt-1.5" style="color: rgb(var(--foreground));"><?= (int)($productCount ?? 0) ?></h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
-                <i class="fa-solid fa-boxes-stacked text-lg"></i>
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
+                <i class="fa-solid fa-boxes-stacked text-lg" aria-hidden="true"></i>
             </div>
         </div>
-        <p class="mt-4 text-sm text-slate-500 font-medium flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> في الكتالوج
+        <p class="mt-4 text-sm font-medium flex items-center gap-1.5" style="color: rgb(var(--muted-foreground));">
+            <span class="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true"></span> في الكتالوج
         </p>
     </div>
 
-    <div class="app-card p-6 hover:-translate-y-0.5 group relative overflow-hidden border-red-100">
-        <div class="absolute top-0 right-0 w-1 h-full bg-red-400 rounded-l"></div>
+    <div class="app-card p-6 group relative overflow-hidden" style="border-color: rgb(254 202 202);">
+        <div class="absolute top-0 right-0 w-1 h-full rounded-l" style="background: rgb(var(--color-danger));"></div>
         <div class="flex justify-between items-start">
             <div>
-                <p class="text-xs font-bold text-red-500 uppercase tracking-widest">منخفضة المخزون</p>
-                <h3 class="stat-value text-2xl md:text-3xl font-bold text-slate-800 mt-1.5"><?= (int)($lowStockCount ?? 0) ?></h3>
+                <p class="text-xs font-bold uppercase tracking-widest" style="color: rgb(var(--color-danger));">منخفضة المخزون</p>
+                <h3 class="stat-value text-2xl md:text-3xl font-bold mt-1.5" style="color: rgb(var(--foreground));"><?= (int)($lowStockCount ?? 0) ?></h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-lg shadow-red-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
-                <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style="background: rgb(var(--color-danger)); color: white;">
+                <i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i>
             </div>
         </div>
-        <a href="/products" class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-red-600 hover:text-red-700 px-4 py-2.5 bg-red-50 hover:bg-red-100 rounded-xl transition-colors focus:ring-2 focus:ring-red-400 focus:ring-offset-2 cursor-pointer">
-            إعادة تخزين <i class="fa-solid fa-arrow-left text-xs"></i>
+        <a href="/products" class="mt-4 inline-flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700">
+            إعادة تخزين <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i>
         </a>
     </div>
 </div>
@@ -76,8 +76,8 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
     <div class="xl:col-span-2 app-card-flat p-6 flex flex-col">
         <div class="flex justify-between items-center mb-6">
             <div>
-                <h3 class="text-lg font-bold text-slate-800">نظرة عامة على المبيعات</h3>
-                <p class="text-xs text-slate-400 font-medium mt-1">إيرادات آخر 7 أيام</p>
+                <h3 class="text-lg font-bold" style="color: rgb(var(--foreground));">نظرة عامة على المبيعات</h3>
+                <p class="text-xs font-medium mt-1" style="color: rgb(var(--muted-foreground));">إيرادات آخر 7 أيام</p>
             </div>
             <span class="text-sm bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-slate-600 font-medium">آخر 7 أيام</span>
         </div>

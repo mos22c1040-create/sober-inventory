@@ -12,15 +12,15 @@
     <style> body { font-family: 'Tajawal', sans-serif; } </style>
 </head>
 <body class="error-page">
-    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden login-card animate-slide-up">
+    <div class="w-full max-w-lg rounded-xl overflow-hidden login-card animate-slide-up" style="background: rgb(var(--color-surface-elevated)); border: 1px solid rgb(var(--border)); box-shadow: var(--shadow-lg);">
         <div class="relative px-8 pt-10 pb-6 text-center">
             <span class="error-code block leading-none">403</span>
-            <div class="w-20 h-20 mx-auto -mt-4 mb-6 rounded-2xl bg-amber-100 flex items-center justify-center relative z-10">
-                <i class="fa-solid fa-lock text-3xl text-amber-600"></i>
+            <div class="w-20 h-20 mx-auto -mt-4 mb-6 rounded-xl flex items-center justify-center relative z-10" style="background: rgb(254 243 199); color: rgb(217 119 6);">
+                <i class="fa-solid fa-lock text-3xl" aria-hidden="true"></i>
             </div>
-            <h1 class="text-xl font-bold text-slate-800 mb-2">لا توجد صلاحية</h1>
-            <p class="text-slate-500 text-sm mb-8 max-w-sm mx-auto">ليس لديك صلاحية الوصول إلى هذه الصفحة. تواصل مع المدير إذا كنت تحتاجها.</p>
-            <a href="/dashboard" class="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 cursor-pointer transition-colors shadow-lg shadow-blue-500/25">
+            <h1 class="text-xl font-bold mb-2" style="color: rgb(var(--foreground));">لا توجد صلاحية</h1>
+            <p class="text-sm mb-8 max-w-sm mx-auto" style="color: rgb(var(--muted-foreground));">ليس لديك صلاحية الوصول إلى هذه الصفحة. تواصل مع المدير إذا كنت تحتاجها.</p>
+            <a href="/dashboard" class="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 rounded-lg font-bold text-sm focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors duration-200" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
                 <i class="fa-solid fa-house"></i> العودة للوحة التحكم
             </a>
         </div>

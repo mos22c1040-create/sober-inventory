@@ -12,13 +12,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4 selection:bg-blue-500 selection:text-white"
-      style="background: linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 35%, #f8fafc 100%);">
+<body class="min-h-screen flex items-center justify-center p-4 antialiased" style="font-family: 'Tajawal', sans-serif; background: rgb(var(--background)); color: rgb(var(--foreground));">
 
     <div class="w-full max-w-md login-card bg-white overflow-hidden animate-slide-up">
 
         <!-- Header -->
-        <div class="login-bg px-6 py-10 text-center text-white relative">
+        <div class="login-bg px-6 py-10 text-center text-white relative" style="background: rgb(var(--primary));">
             <div class="relative z-10 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/15 backdrop-blur border border-white/20 mb-5 shadow-lg">
                 <i class="fa-solid fa-box-open text-3xl text-white"></i>
             </div>
@@ -41,21 +40,21 @@
                 <input type="hidden" id="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
                 <div class="mb-5">
-                    <label for="email" class="block text-sm font-semibold text-slate-700 mb-1.5">البريد الإلكتروني</label>
+                    <label for="email" class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">البريد الإلكتروني</label>
                     <input type="email" id="email" name="email" required autocomplete="email"
                            placeholder="admin@example.com"
-                           class="app-input w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm placeholder-slate-400 focus:bg-white">
+                           class="app-input w-full rounded-lg border px-4 py-3 text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
                     <p id="email-error" class="hidden mt-1.5 text-xs text-red-600 font-medium"></p>
                 </div>
 
                 <div class="mb-6">
-                    <label for="password" class="block text-sm font-semibold text-slate-700 mb-1.5">كلمة المرور</label>
+                    <label for="password" class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">كلمة المرور</label>
                     <div class="relative">
                         <input type="password" id="password" name="password" required autocomplete="current-password"
                                placeholder="••••••••"
-                               class="app-input w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pe-12 text-sm placeholder-slate-400 focus:bg-white">
+                               class="app-input w-full rounded-lg border px-4 py-3 pe-12 text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
                         <button type="button" id="toggle-password" tabindex="-1"
-                                class="absolute inset-y-0 end-3 flex items-center text-slate-400 hover:text-blue-500 transition-colors"
+                                class="absolute inset-y-0 end-3 flex items-center transition-colors duration-200 cursor-pointer" style="color: rgb(var(--muted-foreground));"
                                 aria-label="إظهار / إخفاء كلمة المرور">
                             <i class="fa-regular fa-eye text-base" id="eye-icon"></i>
                         </button>
@@ -64,7 +63,7 @@
                 </div>
 
                 <button type="submit" id="submit-btn"
-                        class="btn-primary w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25">
+                        class="btn-primary w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-lg text-sm font-bold focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
                     <span id="btn-text">تسجيل الدخول</span>
                     <i class="fa-solid fa-arrow-left text-xs" id="btn-icon"></i>
                 </button>

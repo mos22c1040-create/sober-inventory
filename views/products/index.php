@@ -6,10 +6,10 @@ $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
 $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 ?>
 
-<nav class="flex items-center gap-2 text-sm text-slate-500 mb-4">
-    <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
-    <i class="fa-solid fa-chevron-left text-xs text-slate-400"></i>
-    <span class="text-slate-700 font-medium">المنتجات</span>
+<nav class="flex items-center gap-2 text-sm mb-4" style="color: rgb(var(--muted-foreground));" aria-label="مسار التنقل">
+    <a href="/dashboard" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">لوحة التحكم</a>
+    <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
+    <span class="font-medium" style="color: rgb(var(--foreground));">المنتجات</span>
 </nav>
 
 <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
@@ -19,22 +19,22 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
     </header>
     <div class="flex flex-wrap items-center gap-3">
         <!-- بحث بالباركود (قارئ USB أو إدخال يدوي) -->
-        <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
-            <i class="fa-solid fa-barcode text-gray-400 text-lg"></i>
+        <div class="flex items-center gap-2 rounded-lg px-3 py-2 app-input border transition-all" style="background: rgb(var(--color-surface-elevated)); border-color: rgb(var(--border));">
+            <i class="fa-solid fa-barcode text-lg" style="color: rgb(var(--muted-foreground));" aria-hidden="true"></i>
             <input type="text" id="barcode-input" placeholder="امسح الباركود أو اكتب الرمز..." autocomplete="off"
-                   class="w-56 border-0 bg-transparent py-1 text-sm outline-none placeholder-gray-400">
-            <button type="button" id="barcode-btn" class="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer" title="بحث بالباركود" aria-label="بحث بالباركود">
+                   class="w-56 border-0 bg-transparent py-1 text-sm outline-none flex-1 min-w-0" style="color: rgb(var(--foreground));">
+            <button type="button" id="barcode-btn" class="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors duration-200 cursor-pointer focus:ring-2 focus:ring-offset-2" style="color: rgb(var(--primary));" onfocus="this.style.boxShadow='0 0 0 3px rgb(var(--ring) / 0.2)'" onblur="this.style.boxShadow='none'" title="بحث بالباركود" aria-label="بحث بالباركود">
                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
             </button>
         </div>
-        <button type="button" id="camera-scan-btn" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium text-slate-700 transition-colors touch-manipulation" title="مسح الباركود من كاميرا الجوال">
-            <i class="fa-solid fa-camera"></i> مسح بالكاميرا <span class="text-xs text-gray-500 hidden sm:inline">(من الجوال)</span>
+        <button type="button" id="camera-scan-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 touch-manipulation cursor-pointer border" style="background: rgb(var(--muted)); color: rgb(var(--foreground)); border-color: rgb(var(--border));" title="مسح الباركود من كاميرا الجوال">
+            <i class="fa-solid fa-camera" aria-hidden="true"></i> مسح بالكاميرا <span class="text-xs hidden sm:inline" style="color: rgb(var(--muted-foreground));">(من الجوال)</span>
         </button>
-        <a href="/barcode-scan" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-100 hover:bg-blue-200 rounded-xl text-sm font-medium text-blue-800 transition-colors" title="افتح على الجوال (ربط بالكابل/شبكة) وامسح — الرمز يظهر هنا">
-            <i class="fa-solid fa-mobile-screen"></i> جوال → حاسوب
+        <a href="/barcode-scan" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 border cursor-pointer" style="background: rgb(var(--muted)); color: rgb(var(--primary)); border-color: rgb(var(--border));" title="افتح على الجوال (ربط بالكابل/شبكة) وامسح — الرمز يظهر هنا">
+            <i class="fa-solid fa-mobile-screen" aria-hidden="true"></i> جوال → حاسوب
         </a>
         <?php if ($isAdmin): ?>
-        <a href="/products/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium shadow-md btn-primary focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 cursor-pointer">
+        <a href="/products/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium btn-primary focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors duration-200" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
             <i class="fa-solid fa-plus ms-2" aria-hidden="true"></i> إضافة منتج
         </a>
         <?php endif; ?>
@@ -45,15 +45,15 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 
 <div class="app-card-flat overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
+        <table class="min-w-full divide-y" style="border-color: rgb(var(--border));">
+            <thead style="background: rgb(var(--muted));">
                 <tr>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">الاسم</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">التصنيف</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">السعر</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">المخزون</th>
-                    <?php if ($isAdmin): ?><th class="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">إجراءات</th><?php endif; ?>
+                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">الاسم</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">الرمز</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">التصنيف</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">السعر</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">المخزون</th>
+                    <?php if ($isAdmin): ?><th class="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">إجراءات</th><?php endif; ?>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
