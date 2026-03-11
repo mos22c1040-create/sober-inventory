@@ -2,45 +2,51 @@
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
 <?php $appSettings = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : []; $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع'; ?>
 
-<nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
-    <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
-    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
-    <a href="/purchases" class="hover:text-blue-600 transition-colors">المشتريات</a>
-    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
-    <span class="text-slate-700 font-medium">مشتريات جديدة</span>
+<nav class="flex items-center gap-2 text-sm mb-4" style="color: rgb(var(--muted-foreground));" aria-label="مسار التنقل">
+    <a href="/dashboard" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">لوحة التحكم</a>
+    <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
+    <a href="/purchases" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">المشتريات</a>
+    <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
+    <span class="font-medium" style="color: rgb(var(--foreground));">مشتريات جديدة</span>
 </nav>
 
 <div class="max-w-4xl">
-    <h1 class="text-2xl font-bold text-slate-800 mb-6">مشتريات جديدة (إعادة تخزين)</h1>
-    <form id="purchase-form" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+    <h1 class="page-title mb-6">مشتريات جديدة (إعادة تخزين)</h1>
+    <form id="purchase-form" class="app-card-flat p-6 space-y-5">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">المورد (اختياري)</label>
-            <input type="text" name="supplier" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500" placeholder="اسم المورد">
+            <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">المورد (اختياري)</label>
+            <input type="text" name="supplier" class="app-input w-full rounded-lg border px-4 py-2.5 text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));" placeholder="اسم المورد">
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">البنود</label>
+            <label class="block text-sm font-semibold mb-2" style="color: rgb(var(--foreground));">البنود</label>
             <div id="purchase-items" class="space-y-3">
-                <div class="purchase-row flex gap-2 items-end border-b border-gray-100 pb-3">
-                    <select name="product_id[]" class="flex-1 rounded-lg border-gray-300 px-3 py-2 border focus:ring-2 focus:ring-blue-500 product-select">
+                <div class="purchase-row flex flex-wrap gap-2 items-end pb-3" style="border-bottom: 1px solid rgb(var(--border));">
+                    <select name="product_id[]" class="app-input flex-1 min-w-[160px] rounded-lg border px-3 py-2.5 text-sm product-select" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
                         <option value="">— اختر منتجًا —</option>
                         <?php foreach ($products as $p): ?>
                         <option value="<?= (int)$p['id'] ?>" data-price="<?= (float)$p['cost'] ?>"><?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$p['cost'], 0) ?>)</option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="number" name="quantity[]" min="1" value="1" placeholder="الكمية" class="w-24 rounded-lg border-gray-300 px-3 py-2 border focus:ring-2 focus:ring-blue-500 qty-input">
-                    <input type="number" name="unit_cost[]" step="0.01" min="0" placeholder="سعر الوحدة" class="w-32 rounded-lg border-gray-300 px-3 py-2 border focus:ring-2 focus:ring-blue-500 cost-input">
-                    <span class="line-total font-medium text-slate-800 w-24" data-currency="<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> 0</span>
-                    <button type="button" class="remove-row text-red-500 hover:text-red-700 px-2">×</button>
+                    <input type="number" name="quantity[]" min="1" value="1" placeholder="الكمية" class="app-input w-24 rounded-lg border px-3 py-2.5 text-sm qty-input" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
+                    <input type="number" name="unit_cost[]" step="0.01" min="0" placeholder="سعر الوحدة" class="app-input w-32 rounded-lg border px-3 py-2.5 text-sm cost-input" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
+                    <span class="line-total font-semibold w-28 text-sm" data-currency="<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?>" style="color: rgb(var(--foreground));"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> 0</span>
+                    <button type="button" class="remove-row min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors duration-200 cursor-pointer" style="color: rgb(var(--color-danger));" aria-label="حذف البند">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
                 </div>
             </div>
-            <button type="button" id="add-purchase-row" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">+ إضافة بند آخر</button>
+            <button type="button" id="add-purchase-row" class="mt-3 inline-flex items-center gap-2 text-sm font-medium transition-colors duration-200 cursor-pointer" style="color: rgb(var(--primary));">
+                <i class="fa-solid fa-plus text-xs" aria-hidden="true"></i> إضافة بند آخر
+            </button>
         </div>
-        <div class="pt-4 flex justify-between items-center border-t border-gray-200">
-            <p class="text-lg font-bold text-slate-800">الإجمالي: <span id="purchase-grand-total"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> 0</span></p>
+        <div class="pt-4 flex flex-wrap justify-between items-center gap-4" style="border-top: 1px solid rgb(var(--border));">
+            <p class="text-lg font-bold" style="color: rgb(var(--foreground));">الإجمالي: <span id="purchase-grand-total" class="stat-value"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> 0</span></p>
             <div class="flex gap-3">
-                <a href="/purchases" class="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">إلغاء</a>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">حفظ المشتريات</button>
+                <a href="/purchases" class="min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium border flex items-center transition-colors duration-200 cursor-pointer" style="border-color: rgb(var(--border)); color: rgb(var(--foreground));">إلغاء</a>
+                <button type="submit" id="submit-btn" class="min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-semibold btn-primary focus:ring-2 focus:ring-offset-2 transition-colors duration-200 cursor-pointer" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
+                    <i class="fa-solid fa-floppy-disk ms-2" aria-hidden="true"></i> حفظ المشتريات
+                </button>
             </div>
         </div>
     </form>
@@ -58,8 +64,11 @@
         tpl.querySelector('.qty-input').value = 1;
         tpl.querySelector('.cost-input').value = '';
         tpl.querySelector('.line-total').textContent = currencySym + ' 0';
-        tpl.querySelector('.line-total').removeAttribute('data-currency');
-        tpl.querySelectorAll('select option').forEach((o, i) => { if (i === 0) return; const pid = o.value; const prod = productOptions.find(p => p.id == pid); if (prod) o.setAttribute('data-price', prod.cost); });
+        tpl.querySelectorAll('select option').forEach((o, i) => {
+            if (i === 0) return;
+            const prod = productOptions.find(p => p.id == o.value);
+            if (prod) o.setAttribute('data-price', prod.cost);
+        });
         document.getElementById('purchase-items').appendChild(tpl);
         bindRow(tpl);
     }
@@ -98,6 +107,8 @@
 
     document.getElementById('purchase-form').onsubmit = async function(e) {
         e.preventDefault();
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
         const rows = document.querySelectorAll('.purchase-row');
         const items = [];
         rows.forEach(row => {
@@ -106,16 +117,25 @@
             const unitCost = parseFloat(row.querySelector('.cost-input').value) || 0;
             if (productId && qty > 0) items.push({ product_id: productId, quantity: qty, unit_cost: unitCost, total: qty * unitCost });
         });
-        if (!items.length) { alert('أضف بنداً واحداً على الأقل'); return; }
-        const body = {
-            csrf_token: document.querySelector('input[name="csrf_token"]').value,
-            supplier: document.querySelector('input[name="supplier"]').value.trim(),
-            items
-        };
-        const res = await fetch('/api/purchases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const json = await res.json();
-        if (json.success && json.redirect) window.location.href = json.redirect;
-        else alert(json.error || 'حدث خطأ أثناء الحفظ');
+        if (!items.length) { alert('أضف بنداً واحداً على الأقل'); btn.disabled = false; return; }
+        try {
+            const res = await fetch('/api/purchases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    csrf_token: document.querySelector('input[name="csrf_token"]').value,
+                    supplier: document.querySelector('input[name="supplier"]').value.trim(),
+                    items
+                })
+            });
+            const json = await res.json();
+            if (json.success && json.redirect) window.location.href = json.redirect;
+            else alert(json.error || 'حدث خطأ أثناء الحفظ');
+        } catch(err) {
+            alert('فشل الاتصال بالسيرفر');
+        } finally {
+            btn.disabled = false;
+        }
     };
 })();
 </script>

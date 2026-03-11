@@ -2,43 +2,49 @@
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
 <?php $appSettings = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : []; $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع'; ?>
 
-<nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
-    <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
-    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
-    <span class="text-slate-700 font-medium">المشتريات</span>
+<nav class="flex items-center gap-2 text-sm mb-4" style="color: rgb(var(--muted-foreground));" aria-label="مسار التنقل">
+    <a href="/dashboard" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">لوحة التحكم</a>
+    <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
+    <span class="font-medium" style="color: rgb(var(--foreground));">المشتريات</span>
 </nav>
 
-<div class="flex justify-between items-center mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-800">المشتريات</h1>
-        <p class="text-sm text-slate-500 mt-1">إدخال مخزون وإعادة التعبئة</p>
-    </div>
-<a href="/purchases/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium shadow-md btn-primary focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 cursor-pointer">
-            <i class="fa-solid fa-plus ms-2" aria-hidden="true"></i> مشتريات جديدة
-        </a>
+<div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+    <header class="page-header mb-0">
+        <h1 class="page-title">المشتريات</h1>
+        <p class="page-subtitle">إدخال مخزون وإعادة التعبئة</p>
+    </header>
+    <a href="/purchases/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium btn-primary focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors duration-200" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
+        <i class="fa-solid fa-plus ms-2" aria-hidden="true"></i> مشتريات جديدة
+    </a>
 </div>
 
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+<div class="app-card-flat overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+        <table class="min-w-full divide-y" style="border-color: rgb(var(--border));">
+            <thead style="background: rgb(var(--muted));">
                 <tr>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">الرقم</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">المورد</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">الإجمالي</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">التاريخ</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">الرقم</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">المورد</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">الإجمالي</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">التاريخ</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y" style="border-color: rgb(var(--border));">
                 <?php if (empty($purchases)): ?>
-                <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">لا توجد مشتريات بعد. <a href="/purchases/create" class="text-blue-600 hover:underline">أضف مشتريات</a>.</td></tr>
+                <tr><td colspan="4" class="px-6 py-16">
+                    <div class="empty-state">
+                        <div class="empty-state-icon mx-auto"><i class="fa-solid fa-truck-ramp-box" aria-hidden="true"></i></div>
+                        <p class="font-medium">لا توجد مشتريات بعد.</p>
+                        <a href="/purchases/create" class="inline-flex items-center gap-2 mt-3 text-sm font-bold" style="color: rgb(var(--primary));"><i class="fa-solid fa-plus" aria-hidden="true"></i> إضافة مشتريات</a>
+                    </div>
+                </td></tr>
                 <?php else: ?>
                 <?php foreach ($purchases as $pu): ?>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 text-sm font-medium text-slate-800">#<?= (int)$pu['id'] ?></td>
-                    <td class="px-6 py-4 text-sm text-gray-600"><?= htmlspecialchars($pu['supplier'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
-                    <td class="px-6 py-4 text-sm text-right font-medium text-slate-800"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$pu['total'], 0) ?></td>
-                    <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars(date('Y/m/j H:i', strtotime($pu['created_at'] ?? '')), ENT_QUOTES, 'UTF-8') ?></td>
+                <tr class="app-table-row transition-colors duration-200">
+                    <td class="px-6 py-4 text-sm font-medium" style="color: rgb(var(--foreground));">#<?= (int)$pu['id'] ?></td>
+                    <td class="px-6 py-4 text-sm" style="color: rgb(var(--muted-foreground));"><?= htmlspecialchars($pu['supplier'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+                    <td class="px-6 py-4 text-sm text-right font-medium" style="color: rgb(var(--foreground));"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$pu['total'], 0) ?></td>
+                    <td class="px-6 py-4 text-sm" style="color: rgb(var(--muted-foreground));"><?= htmlspecialchars(date('Y/m/j H:i', strtotime($pu['created_at'] ?? '')), ENT_QUOTES, 'UTF-8') ?></td>
                 </tr>
                 <?php endforeach; ?>
                 <?php endif; ?>
