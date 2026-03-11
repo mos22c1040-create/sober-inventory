@@ -23,9 +23,10 @@ class AuthHelper
     /**
      * Start a secure PHP session (once per request).
      *
-     * Hardened cookie flags:
+     * Hardened cookie flags (per backend-security-coder):
      *  - HttpOnly   → JS cannot read the session cookie
      *  - SameSite   → mitigates CSRF at cookie level
+     *  - Secure    → cookie sent only over HTTPS (production only)
      *  - use_only_cookies → no session IDs in URLs
      */
     public static function startSession(): void
@@ -34,6 +35,10 @@ class AuthHelper
             ini_set('session.cookie_httponly', '1');
             ini_set('session.use_only_cookies', '1');
             ini_set('session.cookie_samesite', 'Strict');
+            $isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '') === 'production';
+            if ($isProduction) {
+                ini_set('session.cookie_secure', '1');
+            }
             session_start();
         }
     }

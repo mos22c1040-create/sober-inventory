@@ -96,11 +96,12 @@ $monthlyTotal = $monthlyTotal ?? 0;
                     <?php endif; ?>
                     <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500">الكاشير</th>
                     <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500">التاريخ والوقت</th>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500">إجراءات</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50" id="sales-tbody">
                 <?php if (empty($sales)): ?>
-                <tr><td colspan="7" class="px-5 py-16 text-center text-gray-400">
+                <tr><td colspan="8" class="px-5 py-16 text-center text-gray-400">
                     <i class="fa-solid fa-receipt text-4xl opacity-20 block mb-3"></i>
                     لا توجد مبيعات بعد. <a href="/sales/create" class="text-emerald-600 hover:underline font-medium">أضف فاتورة جديدة</a>
                 </td></tr>
@@ -170,6 +171,13 @@ $monthlyTotal = $monthlyTotal ?? 0;
                             <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 rounded-full">اليوم</span>
                             <?php endif; ?>
                         </div>
+                    </td>
+                    <td class="px-5 py-3.5 text-center">
+                        <a href="/sales/receipt?id=<?= (int) $sale['id'] ?>" target="_blank"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors"
+                           title="طباعة الوصل">
+                            <i class="fa-solid fa-print text-xs"></i> طباعة
+                        </a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

@@ -50,6 +50,31 @@ class SaleController extends Controller
         ]);
     }
 
+    /** GET /sales/receipt?id=N */
+    public function receipt(): void
+    {
+        AuthHelper::requireAuth();
+        $id = (int) ($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            header('Location: /sales');
+            exit;
+        }
+        $sale = Sale::find($id);
+        if (!$sale) {
+            header('Location: /sales');
+            exit;
+        }
+        $items       = Sale::getItems($id);
+        $appSettings = file_exists(BASE_PATH . '/config/app_settings.php')
+            ? (array) include BASE_PATH . '/config/app_settings.php'
+            : [];
+
+        // Receipt is a standalone page – just extract variables and include the view.
+        extract(['sale' => $sale, 'items' => $items, 'appSettings' => $appSettings]);
+        require BASE_PATH . '/views/sales/receipt.php';
+        exit;
+    }
+
     /** POST /api/sales */
     public function store(): void
     {
@@ -114,7 +139,7 @@ class SaleController extends Controller
             // Invalidate dashboard daily-totals cache after a new sale
             FileCache::delete('dashboard_daily_totals_7');
 
-            $this->jsonResponse(['success' => true, 'redirect' => '/sales']);
+            $this->jsonResponse(['success' => true, 'sale_id' => $saleId, 'redirect' => '/sales']);
         } catch (\Exception $e) {
             $this->jsonResponse(['error' => 'حدث خطأ أثناء حفظ الفاتورة'], 500);
         }

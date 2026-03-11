@@ -7,10 +7,21 @@ if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(__DIR__));
 }
 
+// Load env early so we can block dev-only routes in production
+if (file_exists(BASE_PATH . '/config/db.php')) {
+    require BASE_PATH . '/config/db.php';
+}
+$isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: 'development') === 'production';
+
 // When used as router: php -S localhost:8000 -t public public/index.php
 // Serve existing static files (favicon, css, js, images) and let the server handle them
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 if ($requestPath !== '/' && $requestPath !== '') {
+    // In production, block diagnostic and password-reset pages (security)
+    if ($isProduction && in_array($requestPath, ['/diag.php', '/reset_pass.php'], true)) {
+        http_response_code(404);
+        exit;
+    }
     $staticFile = __DIR__ . $requestPath;
     if (is_file($staticFile) && strpos(realpath($staticFile), realpath(__DIR__)) === 0) {
         return false; // let PHP built-in server serve the file
@@ -21,12 +32,6 @@ if ($requestPath !== '/' && $requestPath !== '') {
         return true;
     }
 }
-
-// Load env early for APP_ENV
-if (file_exists(BASE_PATH . '/config/db.php')) {
-    require BASE_PATH . '/config/db.php';
-}
-$isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: 'development') === 'production';
 if ($isProduction) {
     ini_set('display_errors', '0');
     ini_set('display_startup_errors', '0');
@@ -62,6 +67,9 @@ spl_autoload_register(function ($class) {
         require $file;
     }
 });
+
+// Security headers (per backend-security-coder: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, HSTS in production)
+\App\Helpers\Security::sendSecurityHeaders();
 
 // Use database sessions on Vercel/serverless (SESSION_DRIVER=database in .env)
 if (($_ENV['SESSION_DRIVER'] ?? getenv('SESSION_DRIVER') ?: '') === 'database') {
@@ -107,6 +115,7 @@ $router->post('/api/categories/delete', 'CategoryController@delete');
 // Sales
 $router->get('/sales', 'SaleController@index');
 $router->get('/sales/create', 'SaleController@create');
+$router->get('/sales/receipt', 'SaleController@receipt');
 $router->post('/api/sales', 'SaleController@store');
 
 // Purchases

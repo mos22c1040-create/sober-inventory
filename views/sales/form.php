@@ -223,15 +223,21 @@
         </div>
         <h2 class="text-xl font-bold text-slate-800 mb-1">تم حفظ الفاتورة!</h2>
         <p id="success-invoice-num" class="text-slate-500 text-sm mb-6"></p>
-        <div class="flex gap-3">
-            <a href="/sales/create" id="btn-new-sale"
-               class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-colors">
-                <i class="fa-solid fa-plus me-1"></i> فاتورة جديدة
+        <div class="flex flex-col gap-3">
+            <a href="#" id="btn-print-receipt" target="_blank"
+               class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                <i class="fa-solid fa-print"></i> طباعة الوصل
             </a>
-            <a href="/sales" id="btn-go-sales"
-               class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-colors">
-                قائمة المبيعات
-            </a>
+            <div class="flex gap-3">
+                <a href="/sales/create" id="btn-new-sale"
+                   class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-colors">
+                    <i class="fa-solid fa-plus me-1"></i> فاتورة جديدة
+                </a>
+                <a href="/sales" id="btn-go-sales"
+                   class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-colors">
+                    قائمة المبيعات
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -601,6 +607,10 @@
                 const so = document.getElementById('success-overlay');
                 document.getElementById('success-invoice-num').textContent =
                     'الإجمالي: ' + currencySym + ' ' + fmt(calcTotal());
+                /* رابط طباعة الوصل */
+                if (data.sale_id) {
+                    document.getElementById('btn-print-receipt').href = '/sales/receipt?id=' + data.sale_id;
+                }
                 so.style.removeProperty('display');
                 so.style.display = 'flex';
             } else {

@@ -5,13 +5,48 @@ declare(strict_types=1);
 namespace App\Helpers;
 
 /**
- * Security — centralised input sanitisation, CSRF protection, and password hashing.
+ * Security — centralised input sanitisation, CSRF protection, password hashing,
+ * and HTTP security headers (per backend-security-coder / OWASP).
  *
  * All methods are static; this class is a stateless utility namespace.
  * PSR-12 compliant.
  */
 class Security
 {
+    // -------------------------------------------------------------------------
+    // HTTP security headers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Send security-related HTTP headers on every response.
+     *
+     * Call once per request (e.g. from front controller) before any output.
+     * (Per skill: backend-security-coder — HTTP Security Headers and Cookies.)
+     *
+     * - X-Content-Type-Options: prevents MIME sniffing
+     * - X-Frame-Options: prevents clickjacking
+     * - Referrer-Policy: limits referrer leakage
+     * - Permissions-Policy: restricts browser features (camera only for self for barcode scan)
+     * - HSTS: only in production (HTTPS) to avoid breaking local HTTP dev
+     */
+    public static function sendSecurityHeaders(): void
+    {
+        if (headers_sent()) {
+            return;
+        }
+
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: SAMEORIGIN');
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+        // Restrict browser features: camera allowed for same-origin (barcode scan), others disabled
+        header('Permissions-Policy: camera=(self), geolocation=(), microphone=(), payment=()');
+
+        $env = $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '';
+        if ($env === 'production') {
+            header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Input sanitisation
     // -------------------------------------------------------------------------
