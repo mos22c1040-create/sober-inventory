@@ -35,9 +35,13 @@ class AuthController extends Controller
         }
 
         $csrfToken = Security::generateCsrfToken();
+        $basePath  = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\') ?: '/';
+        $expired   = isset($_GET['expired']) && $_GET['expired'] === '1';
 
         $this->view('auth/login', [
             'csrfToken' => $csrfToken,
+            'basePath'  => $basePath,
+            'expired'   => $expired,
         ]);
     }
 
@@ -180,6 +184,9 @@ class AuthController extends Controller
             RateLimiter::clear($rlKey);
 
             ActivityLog::log('login');
+
+            // Persist session before sending response so redirect to /dashboard sees the session
+            session_write_close();
 
             $this->jsonResponse([
                 'success'  => true,
