@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
+use App\Helpers\FileCache;
 use App\Helpers\Security;
 use App\Models\Sale;
 use App\Models\Product;
@@ -16,21 +17,26 @@ class SaleController extends Controller
     public function index(): void
     {
         AuthHelper::requireAuth();
+        $page = max(1, (int) ($_GET['page'] ?? 1));
         try {
-            $sales      = Sale::all(200);
-            $todayTotal = Sale::todayTotal();
-            $todayCount = Sale::todayCount();
+            $paginated    = Sale::paginate($page, 25);
+            $todayTotal   = Sale::todayTotal();
+            $todayCount   = Sale::todayCount();
+            $monthlyTotal = Sale::monthlyTotal();
         } catch (PDOException $e) {
-            $sales      = [];
-            $todayTotal = 0.0;
-            $todayCount = 0;
+            $paginated    = ['data' => [], 'total' => 0, 'page' => 1, 'perPage' => 25, 'pages' => 0];
+            $todayTotal   = 0.0;
+            $todayCount   = 0;
+            $monthlyTotal = 0.0;
         }
 
         $this->view('sales/index', [
-            'title'      => 'المبيعات',
-            'sales'      => $sales,
-            'todayTotal' => $todayTotal,
-            'todayCount' => $todayCount,
+            'title'        => 'المبيعات',
+            'sales'        => $paginated['data'],
+            'pagination'   => $paginated,
+            'todayTotal'   => $todayTotal,
+            'todayCount'   => $todayCount,
+            'monthlyTotal' => $monthlyTotal,
         ]);
     }
 
@@ -104,6 +110,9 @@ class SaleController extends Controller
             $saleId = Sale::create($userId, $validItems, $customerName, $paymentMethod, $discount, $notes);
 
             ActivityLog::log('sale.create', 'sale', $saleId, "فاتورة للعميل: $customerName");
+
+            // Invalidate dashboard daily-totals cache after a new sale
+            FileCache::delete('dashboard_daily_totals_7');
 
             $this->jsonResponse(['success' => true, 'redirect' => '/sales']);
         } catch (\Exception $e) {

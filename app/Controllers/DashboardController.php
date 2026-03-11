@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
+use App\Helpers\FileCache;
 use App\Models\Product;
 use App\Models\Sale;
 use PDOException;
@@ -22,34 +23,40 @@ class DashboardController extends Controller
         $recentSales = [];
         $dailyTotals = [];
 
+        $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
         try {
-            $todaySales = Sale::todayTotal();
-            $todayCount = Sale::todayCount();
+            $todaySales  = Sale::todayTotal();
+            $todayCount  = Sale::todayCount();
             $recentSales = Sale::all(10);
-            $rawDaily   = Sale::getDailyTotalsLastDays(7);
+
+            // Cache the 7-day daily totals for 5 minutes — avoids re-aggregating on every page load
+            $rawDaily = FileCache::remember(
+                'dashboard_daily_totals_7',
+                static fn() => Sale::getDailyTotalsLastDays(7),
+                300
+            );
+
             $dailyTotals = [];
-            $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
             for ($i = 6; $i >= 0; $i--) {
-                $d = date('Y-m-d', strtotime("-$i days"));
-                $total = $rawDaily[$d] ?? 0.0;
+                $d             = date('Y-m-d', strtotime("-{$i} days"));
                 $dailyTotals[] = [
-                    'date' => $d,
-                    'total' => $total,
+                    'date'  => $d,
+                    'total' => (float) ($rawDaily[$d] ?? 0.0),
                     'label' => $dayNames[(int) date('w', strtotime($d))],
                 ];
             }
         } catch (PDOException $e) {
-            $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
             $dailyTotals = [];
             for ($i = 6; $i >= 0; $i--) {
-                $d = date('Y-m-d', strtotime("-$i days"));
+                $d             = date('Y-m-d', strtotime("-{$i} days"));
                 $dailyTotals[] = ['date' => $d, 'total' => 0.0, 'label' => $dayNames[(int) date('w', strtotime($d))]];
             }
-            // Table or column missing (e.g. run storage/patch_sales_table.sql)
         }
 
         try {
-            $productCount = count(Product::all(false));
+            // Use COUNT query instead of fetching all rows
+            $productCount  = FileCache::remember('dashboard_product_count', static fn() => Product::count(), 120);
             $lowStockCount = Product::countLowStock();
         } catch (PDOException $e) {
             // Table missing

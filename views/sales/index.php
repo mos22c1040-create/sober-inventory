@@ -3,10 +3,9 @@
 <?php
 $appSettings    = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : [];
 $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
-$todayTotal     = $todayTotal ?? 0;
-$todayCount     = $todayCount ?? 0;
-$monthlySales   = array_filter($sales ?? [], fn($s) => strtotime($s['created_at'] ?? '') >= strtotime(date('Y-m-01')));
-$monthlyTotal   = array_sum(array_column($monthlySales, 'total'));
+$todayTotal   = $todayTotal   ?? 0;
+$todayCount   = $todayCount   ?? 0;
+$monthlyTotal = $monthlyTotal ?? 0;
 ?>
 
 <nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
@@ -184,6 +183,34 @@ $monthlyTotal   = array_sum(array_column($monthlySales, 'total'));
         لا توجد فواتير تطابق البحث
     </div>
 </div>
+
+<?php if (($pagination['pages'] ?? 1) > 1): ?>
+<div class="flex items-center justify-between mt-4 px-1">
+    <p class="text-sm text-slate-500">
+        صفحة <?= $pagination['page'] ?> من <?= $pagination['pages'] ?> — إجمالي <?= number_format($pagination['total']) ?> فاتورة
+    </p>
+    <div class="flex items-center gap-1">
+        <?php if ($pagination['page'] > 1): ?>
+        <a href="?page=<?= $pagination['page'] - 1 ?>"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-slate-600">
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+        </a>
+        <?php endif; ?>
+        <?php for ($pg = max(1, $pagination['page'] - 2); $pg <= min($pagination['pages'], $pagination['page'] + 2); $pg++): ?>
+        <a href="?page=<?= $pg ?>"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors <?= $pg === $pagination['page'] ? 'bg-emerald-600 text-white shadow-sm' : 'border border-slate-200 hover:bg-slate-50 text-slate-600' ?>">
+            <?= $pg ?>
+        </a>
+        <?php endfor; ?>
+        <?php if ($pagination['page'] < $pagination['pages']): ?>
+        <a href="?page=<?= $pagination['page'] + 1 ?>"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-slate-600">
+            <i class="fa-solid fa-chevron-left text-xs"></i>
+        </a>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <script>
 (function() {

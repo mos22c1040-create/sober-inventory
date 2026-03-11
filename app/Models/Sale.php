@@ -17,6 +17,42 @@ class Sale
         return $stmt->fetchAll();
     }
 
+    /** Total sale count. */
+    public static function count(): int
+    {
+        $stmt = Database::getInstance()->query("SELECT COUNT(*) AS cnt FROM sales");
+        return (int) ($stmt->fetch()['cnt'] ?? 0);
+    }
+
+    /**
+     * Paginated sales list.
+     *
+     * @return array{ data: array, total: int, page: int, perPage: int, pages: int }
+     */
+    public static function paginate(int $page = 1, int $perPage = 25): array
+    {
+        $page    = max(1, $page);
+        $perPage = max(1, min(100, $perPage));
+        $offset  = ($page - 1) * $perPage;
+        $total   = self::count();
+
+        $stmt = Database::getInstance()->query(
+            "SELECT s.*, u.username AS cashier_name
+               FROM sales s
+               LEFT JOIN users u ON s.user_id = u.id
+              ORDER BY s.created_at DESC
+              LIMIT {$perPage} OFFSET {$offset}"
+        );
+
+        return [
+            'data'    => $stmt->fetchAll(),
+            'total'   => $total,
+            'page'    => $page,
+            'perPage' => $perPage,
+            'pages'   => (int) ceil($total / $perPage),
+        ];
+    }
+
     public static function find(int $id): ?array
     {
         $db = Database::getInstance();
@@ -100,6 +136,16 @@ class Sale
         }
 
         return $saleId;
+    }
+
+    public static function monthlyTotal(): float
+    {
+        $db  = Database::getInstance();
+        $sql = $db->getDriver() === 'pgsql'
+            ? "SELECT COALESCE(SUM(total), 0) AS total FROM sales WHERE date_trunc('month', created_at) = date_trunc('month', CURRENT_DATE) AND status = 'paid'"
+            : "SELECT COALESCE(SUM(total), 0) AS total FROM sales WHERE YEAR(created_at) = YEAR(CURDATE()) AND MONTH(created_at) = MONTH(CURDATE()) AND status = 'paid'";
+        $row = $db->query($sql)->fetch();
+        return (float) ($row['total'] ?? 0);
     }
 
     public static function todayTotal(): float

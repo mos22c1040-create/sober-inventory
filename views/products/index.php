@@ -92,6 +92,34 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
     </div>
 </div>
 
+<?php if (($pagination['pages'] ?? 1) > 1): ?>
+<div class="flex items-center justify-between mt-4 px-1">
+    <p class="text-sm text-slate-500">
+        عرض <?= number_format(count($products)) ?> من إجمالي <?= number_format($pagination['total']) ?> منتج
+    </p>
+    <div class="flex items-center gap-1">
+        <?php if ($pagination['page'] > 1): ?>
+        <a href="?page=<?= $pagination['page'] - 1 ?>"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-slate-600">
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+        </a>
+        <?php endif; ?>
+        <?php for ($pg = max(1, $pagination['page'] - 2); $pg <= min($pagination['pages'], $pagination['page'] + 2); $pg++): ?>
+        <a href="?page=<?= $pg ?>"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors <?= $pg === $pagination['page'] ? 'bg-blue-600 text-white shadow-sm' : 'border border-slate-200 hover:bg-slate-50 text-slate-600' ?>">
+            <?= $pg ?>
+        </a>
+        <?php endfor; ?>
+        <?php if ($pagination['page'] < $pagination['pages']): ?>
+        <a href="?page=<?= $pagination['page'] + 1 ?>"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-slate-600">
+            <i class="fa-solid fa-chevron-left text-xs"></i>
+        </a>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <div id="camera-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4 hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[95vh] flex flex-col overflow-hidden">
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">

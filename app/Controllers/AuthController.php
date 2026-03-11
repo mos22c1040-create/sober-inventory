@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Database;
 use App\Helpers\AuthHelper;
+use App\Helpers\RateLimiter;
 use App\Helpers\Security;
 use App\Models\ActivityLog;
 
@@ -106,6 +107,17 @@ class AuthController extends Controller
             return;
         }
 
+        // --- Rate limiting (5 attempts per 15 minutes per IP) -------------------
+        $ip       = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip       = trim(explode(',', (string) $ip)[0]);         // handle proxy chains
+        $rlKey    = 'login_' . $ip;
+        if (!RateLimiter::attempt($rlKey, 5, 900)) {
+            $wait = RateLimiter::retryAfter($rlKey, 900);
+            $min  = (int) ceil($wait / 60);
+            $sendError('تجاوزت الحد المسموح به. حاول مجدداً بعد ' . $min . ' دقيقة.', 429);
+            return;
+        }
+
         // --- Email format validation --------------------------------------------
         if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $sendError('صيغة البريد الإلكتروني غير صحيحة.', 400);
@@ -164,7 +176,10 @@ class AuthController extends Controller
             unset($_SESSION['csrf_token']);
             Security::generateCsrfToken();
 
-            ActivityLog::log('login', null, null, (string) $user['email']);
+            // Clear rate-limit counter on successful login
+            RateLimiter::clear($rlKey);
+
+            ActivityLog::log('login');
 
             $this->jsonResponse([
                 'success'  => true,

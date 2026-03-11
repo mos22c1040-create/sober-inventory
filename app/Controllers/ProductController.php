@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
+use App\Helpers\FileCache;
 use App\Helpers\Security;
 use App\Models\ActivityLog;
 use App\Models\Category;
@@ -15,11 +16,13 @@ class ProductController extends Controller
     public function index(): void
     {
         AuthHelper::requireAuth();
-        $products = Product::all(true);
+        $page       = max(1, (int) ($_GET['page'] ?? 1));
+        $paginated  = Product::paginate($page, 20);
         $this->view('products/index', [
-            'title' => 'المنتجات',
-            'products' => $products,
-            'csrfToken' => Security::generateCsrfToken(),
+            'title'      => 'المنتجات',
+            'products'   => $paginated['data'],
+            'pagination' => $paginated,
+            'csrfToken'  => Security::generateCsrfToken(),
         ]);
     }
 
@@ -62,6 +65,7 @@ class ProductController extends Controller
         ];
         $id = Product::create($data);
         ActivityLog::log('product.create', 'product', $id, $name);
+        FileCache::delete('dashboard_product_count');
         $this->jsonResponse(['success' => true, 'id' => $id, 'redirect' => '/products'], 201);
     }
 
@@ -134,6 +138,7 @@ class ProductController extends Controller
         $name = Product::find($id)['name'] ?? '';
         Product::delete($id);
         ActivityLog::log('product.delete', 'product', $id, $name);
+        FileCache::delete('dashboard_product_count');
         $this->jsonResponse(['success' => true]);
     }
 

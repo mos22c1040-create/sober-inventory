@@ -19,6 +19,42 @@ class Product
         return $stmt->fetchAll();
     }
 
+    /** Total product count (avoids loading all rows just to count). */
+    public static function count(): int
+    {
+        $stmt = Database::getInstance()->query("SELECT COUNT(*) AS cnt FROM products");
+        return (int) ($stmt->fetch()['cnt'] ?? 0);
+    }
+
+    /**
+     * Paginated product list with category join.
+     *
+     * @return array{ data: array, total: int, page: int, perPage: int, pages: int }
+     */
+    public static function paginate(int $page = 1, int $perPage = 20): array
+    {
+        $page    = max(1, $page);
+        $perPage = max(1, min(100, $perPage));
+        $offset  = ($page - 1) * $perPage;
+        $total   = self::count();
+
+        $stmt = Database::getInstance()->query(
+            "SELECT p.*, c.name AS category_name
+               FROM products p
+               LEFT JOIN categories c ON p.category_id = c.id
+              ORDER BY p.name ASC
+              LIMIT {$perPage} OFFSET {$offset}"
+        );
+
+        return [
+            'data'    => $stmt->fetchAll(),
+            'total'   => $total,
+            'page'    => $page,
+            'perPage' => $perPage,
+            'pages'   => (int) ceil($total / $perPage),
+        ];
+    }
+
     public static function find(int $id): ?array
     {
         $db = Database::getInstance();
