@@ -96,6 +96,7 @@ $router->post('/api/pos/complete', 'PosController@complete');
 
 // Products
 $router->get('/products', 'ProductController@index');
+$router->get('/api/products', 'ProductController@indexApi');
 $router->get('/api/products/search', 'ProductController@search');
 $router->get('/api/products/barcode', 'ProductController@barcode');
 $router->get('/barcode-scan', 'ProductController@barcodeScanPage');

@@ -28,6 +28,37 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * GET /api/products — JSON endpoint for mobile/SPA clients.
+     *
+     * Query params:
+     * - page     (int, optional, default 1)
+     * - per_page (int, optional, default 20, max 100)
+     */
+    public function indexApi(): void
+    {
+        AuthHelper::requireAuth();
+
+        $page    = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = (int) ($_GET['per_page'] ?? 20);
+
+        if ($perPage < 1) {
+            $perPage = 20;
+        } elseif ($perPage > 100) {
+            $perPage = 100;
+        }
+
+        $paginated = Product::paginate($page, $perPage);
+
+        $this->jsonResponse([
+            'data'    => $paginated['data'],
+            'page'    => $paginated['page'],
+            'pages'   => $paginated['pages'],
+            'perPage' => $paginated['perPage'],
+            'total'   => $paginated['total'],
+        ]);
+    }
+
     public function create(): void
     {
         AuthHelper::requireRole('admin');
