@@ -8,6 +8,10 @@
         var btn = document.getElementById('sidebar-toggle');
         var backdrop = document.getElementById('sidebar-backdrop');
         var sidebar = document.getElementById('app-sidebar');
+        if (window.matchMedia('(min-width: 768px)').matches) {
+            document.body.classList.remove('mobile-menu-open');
+            if (backdrop) backdrop.style.display = 'none';
+        }
         function openMenu() {
             document.body.classList.add('mobile-menu-open');
             if (btn) btn.setAttribute('aria-expanded', 'true');

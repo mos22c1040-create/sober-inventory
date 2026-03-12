@@ -27,9 +27,10 @@
     $activeClass   = 'sidebar-link-active';
     $inactiveClass = 'sidebar-link-inactive';
     ?>
-    <!-- Mobile backdrop -->
+    <!-- Mobile backdrop: يظهر فقط على الموبايل عند فتح القائمة -->
     <div id="sidebar-backdrop"
-         class="fixed inset-0 bg-black/65 backdrop-blur-sm z-[var(--z-sidebar)] hidden md:hidden transition-opacity duration-300"
+         class="fixed inset-0 bg-black/65 backdrop-blur-sm z-[var(--z-sidebar)] transition-opacity duration-300 md:!hidden"
+         style="display: none;"
          aria-hidden="true"></div>
 
     <!-- Sidebar -->
@@ -174,7 +175,7 @@
     </aside>
 
     <!-- Main Content Wrapper -->
-    <div class="flex-1 flex flex-col overflow-hidden relative">
+    <div class="flex-1 flex flex-col overflow-hidden relative min-w-0">
         <!-- Top Navbar -->
         <header class="h-16 glass flex items-center justify-between px-4 md:px-6 shrink-0 sticky top-0 z-[var(--z-header)]"
                 style="border-bottom: 1px solid rgb(var(--border));">

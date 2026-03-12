@@ -366,6 +366,14 @@ button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 /* ═══════════════════════════════════════════════════════
    SIDEBAR
 ═══════════════════════════════════════════════════════ */
+/* منع ستارة الموبايل من الظهور على الشاشات الكبيرة (تحل مشكلة المستطيل الرمادي) */
+@media (min-width: 768px) {
+    #sidebar-backdrop {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+}
 .sidebar-border-color {
     border-color: rgb(var(--sidebar-border));
 }
