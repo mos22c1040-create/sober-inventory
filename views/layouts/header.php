@@ -1,7 +1,11 @@
 <?php
 if (!isset($basePath)) {
     $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-    $basePath = $basePath === '' || $basePath === '\\' ? '/' : $basePath;
+    $basePath = $basePath === '' || $basePath === '\\' ? '' : $basePath;
+}
+// عندما يكون basePath '/' نستخدم '' لتفادي مسارات مزدوجة مثل //css/app.css
+if ($basePath === '/') {
+    $basePath = '';
 }
 $basePathSafe = htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8');
 ?>

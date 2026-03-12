@@ -47,11 +47,11 @@ class Security
         header(
             "Content-Security-Policy: " .
             "default-src 'self'; " .
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; " .
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " .
-            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
-            "img-src 'self' data: blob:; " .
-            "connect-src 'self'; " .
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; " .
+            "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; " .
+            "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+            "img-src 'self' data: blob: https:; " .
+            "connect-src 'self' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; " .
             "frame-ancestors 'none';"
         );
 

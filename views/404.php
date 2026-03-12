@@ -1,6 +1,6 @@
 <?php
 $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-$basePath = $basePath === '' || $basePath === '\\' ? '/' : $basePath;
+$basePath = ($basePath === '' || $basePath === '\\' || $basePath === '/') ? '' : $basePath;
 $bp = htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>

@@ -1,7 +1,7 @@
         </main>
     </div> <!-- End Main Content Wrapper -->
     <script>
-    window.APP_BASE = <?= json_encode($basePath ?? (rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\') ?: '/'), JSON_UNESCAPED_UNICODE) ?>;
+    window.APP_BASE = <?= json_encode($basePath ?? '', JSON_UNESCAPED_UNICODE) ?>;
     </script>
     <script>
     (function() {
