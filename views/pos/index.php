@@ -173,6 +173,7 @@ $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
 (function () {
     const csrfToken = '<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>';
     const currency  = '<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?>';
+    const BASE      = (document.querySelector('meta[name="app-base"]') || {}).content || '';
     let products = [];
     let cart     = [];
     let lastInvoiceId = null;
@@ -197,7 +198,7 @@ $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
 
     /* ── Load products ─────────────────────────────────────────── */
     function loadProducts(q) {
-        const url = q ? '/api/pos/products?q=' + encodeURIComponent(q) : '/api/pos/products';
+        const url = q ? BASE + '/api/pos/products?q=' + encodeURIComponent(q) : BASE + '/api/pos/products';
         fetch(url)
             .then(r => r.json())
             .then(data => { products = data.products || []; renderProducts(); })
@@ -333,7 +334,7 @@ $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
         if (!cart.length) return;
         this.disabled = true;
         this.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>جاري المعالجة…';
-        fetch('/api/pos/complete', {
+        fetch(BASE + '/api/pos/complete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -349,7 +350,7 @@ $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
                 lastInvoiceId = data.sale_id || null;
                 document.getElementById('pos-success-inv').textContent = 'رقم الفاتورة: ' + (data.invoice_number || '—');
                 const printBtn = document.getElementById('pos-print-btn');
-                if (lastInvoiceId) printBtn.href = '/sales/invoice?id=' + lastInvoiceId;
+                if (lastInvoiceId) printBtn.href = BASE + '/sales/invoice?id=' + lastInvoiceId;
                 else printBtn.classList.add('hidden');
                 document.getElementById('pos-success-modal').classList.remove('hidden');
                 cart = [];

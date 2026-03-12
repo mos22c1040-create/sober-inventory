@@ -165,13 +165,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $uri === '/api/login') {
         ob_end_clean();
     }
 }
-// If app is in a subfolder like 'sober', you'd need to extract just the path after it
-$baseDir = dirname($_SERVER['SCRIPT_NAME']);
-if ($baseDir === '\\' || $baseDir === '.') {
-    $baseDir = '/';
-}
-if (strpos($uri, $baseDir) === 0 && $baseDir !== '/') {
-    $uri = substr($uri, strlen($baseDir));
+// Strip subfolder prefix when APP_SUBDIR is set (e.g. APP_SUBDIR=/myapp).
+// We deliberately avoid dirname(SCRIPT_NAME) because PHP built-in server sets
+// SCRIPT_NAME to the router-script path (e.g. "public/index.php" or
+// "/app/public/index.php"), which produces wrong results on Railway.
+$appSubDir = rtrim((string)($_ENV['APP_SUBDIR'] ?? getenv('APP_SUBDIR') ?: ''), '/');
+if ($appSubDir !== '' && strpos($uri, $appSubDir) === 0) {
+    $uri = substr($uri, strlen($appSubDir));
 }
 // Normalize: /index.php or /index.php/ → /
 $uri = preg_replace('#^/index\.php(?=/|$)#', '/', $uri);

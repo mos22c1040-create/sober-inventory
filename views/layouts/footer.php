@@ -1,7 +1,10 @@
         </main>
     </div> <!-- End Main Content Wrapper -->
     <script>
-    window.APP_BASE = <?= json_encode($basePath ?? '', JSON_UNESCAPED_UNICODE) ?>;
+    (function () {
+        var meta = document.querySelector('meta[name="app-base"]');
+        window.APP_BASE = meta ? meta.content : <?= json_encode(rtrim((string)($_ENV['APP_SUBDIR'] ?? getenv('APP_SUBDIR') ?: ''), '/'), JSON_UNESCAPED_UNICODE) ?>;
+    })();
     </script>
     <script>
     (function() {
