@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
-use App\Models\Product;
-use App\Models\Sale;
 use App\Core\Database;
 
 class ReportController extends Controller
@@ -20,80 +18,101 @@ class ReportController extends Controller
         $settings = (array) include $path;
         return (string) ($settings['currency_symbol'] ?? 'د.ع');
     }
+
+    /** Validate and parse a date string; returns Y-m-d or null. */
+    private static function parseDate(string $input): ?string
+    {
+        $d = \DateTime::createFromFormat('Y-m-d', trim($input));
+        return ($d && $d->format('Y-m-d') === trim($input)) ? trim($input) : null;
+    }
+
+    /** Build the WHERE clause fragment for a date range. */
+    private static function dateClause(bool $isPgsql, string $from, string $to): array
+    {
+        if ($isPgsql) {
+            return [
+                'sql'    => "(s.created_at::date) BETWEEN :from AND :to",
+                'params' => [':from' => $from, ':to' => $to],
+            ];
+        }
+        return [
+            'sql'    => "DATE(s.created_at) BETWEEN :from AND :to",
+            'params' => [':from' => $from, ':to' => $to],
+        ];
+    }
+
     public function index(): void
     {
         AuthHelper::requireRole('admin');
-        $db = Database::getInstance();
-        $isPgsql = $db->getDriver() === 'pgsql';
-        $salesByDay = $isPgsql
-            ? $db->query(
-                "SELECT (s.created_at::date) AS day, SUM(s.total) AS total, COUNT(*) AS count FROM sales s WHERE s.status = 'paid' AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days') GROUP BY (s.created_at::date) ORDER BY day DESC"
-            )->fetchAll()
-            : $db->query(
-                "SELECT DATE(created_at) AS day, SUM(total) AS total, COUNT(*) AS count FROM sales WHERE status = 'paid' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(created_at) ORDER BY day DESC"
-            )->fetchAll();
-        $topProducts = $isPgsql
-            ? $db->query(
-                "SELECT p.name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days') GROUP BY si.product_id, p.name ORDER BY qty_sold DESC LIMIT 10"
-            )->fetchAll()
-            : $db->query(
-                "SELECT p.name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 10"
-            )->fetchAll();
 
-        // Profit summary — revenue vs cost (wrapped in try/catch in case columns don't exist yet)
-        $profitRow = null;
+        // ── Date range ───────────────────────────────────────────────────
+        $from = self::parseDate((string) ($_GET['from'] ?? '')) ?? date('Y-m-d', strtotime('-30 days'));
+        $to   = self::parseDate((string) ($_GET['to']   ?? '')) ?? date('Y-m-d');
+
+        // Prevent reversed range
+        if ($from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $db      = Database::getInstance();
+        $isPgsql = $db->getDriver() === 'pgsql';
+        $dw      = self::dateClause($isPgsql, $from, $to);
+
+        // ── Sales by day ─────────────────────────────────────────────────
+        $dayCol    = $isPgsql ? "(s.created_at::date)" : "DATE(s.created_at)";
+        $salesByDay = $db->query(
+            "SELECT {$dayCol} AS day, SUM(s.total) AS total, COUNT(*) AS count
+               FROM sales s
+              WHERE s.status = 'paid' AND {$dw['sql']}
+              GROUP BY {$dayCol}
+              ORDER BY day DESC",
+            $dw['params']
+        )->fetchAll();
+
+        // ── Top products ─────────────────────────────────────────────────
+        $topParams = $dw['params'];
+        $topProducts = $db->query(
+            "SELECT p.name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue
+               FROM sale_items si
+               JOIN products p  ON si.product_id = p.id
+               JOIN sales s     ON si.sale_id = s.id
+              WHERE s.status = 'paid' AND {$dw['sql']}
+              GROUP BY si.product_id, p.name
+              ORDER BY qty_sold DESC
+              LIMIT 10",
+            $topParams
+        )->fetchAll();
+
+        // ── Profit summary ────────────────────────────────────────────────
+        $profitRow       = null;
         $profitByProduct = [];
         try {
-        $profitRow = $isPgsql
-            ? $db->query(
+            $profitRow = $db->query(
                 "SELECT
-                    SUM(si.quantity * si.unit_price) AS total_revenue,
-                    SUM(si.quantity * p.cost)        AS total_cost,
-                    SUM(si.quantity * (si.unit_price - p.cost)) AS gross_profit
-                 FROM sale_items si
-                 JOIN products p ON si.product_id = p.id
-                 JOIN sales s ON si.sale_id = s.id
-                 WHERE s.status = 'paid'
-                   AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days')"
-            )->fetch()
-            : $db->query(
-                "SELECT
-                    SUM(si.quantity * si.unit_price) AS total_revenue,
-                    SUM(si.quantity * p.cost)        AS total_cost,
-                    SUM(si.quantity * (si.unit_price - p.cost)) AS gross_profit
-                 FROM sale_items si
-                 JOIN products p ON si.product_id = p.id
-                 JOIN sales s ON si.sale_id = s.id
-                 WHERE s.status = 'paid'
-                   AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+                    SUM(si.quantity * si.unit_price)               AS total_revenue,
+                    SUM(si.quantity * p.cost)                      AS total_cost,
+                    SUM(si.quantity * (si.unit_price - p.cost))    AS gross_profit
+                   FROM sale_items si
+                   JOIN products p ON si.product_id = p.id
+                   JOIN sales s    ON si.sale_id = s.id
+                  WHERE s.status = 'paid' AND {$dw['sql']}",
+                $dw['params']
             )->fetch();
 
-        $profitByProduct = $isPgsql
-            ? $db->query(
-                "SELECT p.name, SUM(si.quantity) AS qty_sold,
-                    SUM(si.quantity * si.unit_price) AS revenue,
-                    SUM(si.quantity * p.cost) AS cost,
-                    SUM(si.quantity * (si.unit_price - p.cost)) AS profit
-                 FROM sale_items si
-                 JOIN products p ON si.product_id = p.id
-                 JOIN sales s ON si.sale_id = s.id
-                 WHERE s.status = 'paid'
-                   AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days')
-                 GROUP BY si.product_id, p.name
-                 ORDER BY profit DESC LIMIT 10"
-            )->fetchAll()
-            : $db->query(
-                "SELECT p.name, SUM(si.quantity) AS qty_sold,
-                    SUM(si.quantity * si.unit_price) AS revenue,
-                    SUM(si.quantity * p.cost) AS cost,
-                    SUM(si.quantity * (si.unit_price - p.cost)) AS profit
-                 FROM sale_items si
-                 JOIN products p ON si.product_id = p.id
-                 JOIN sales s ON si.sale_id = s.id
-                 WHERE s.status = 'paid'
-                   AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                 GROUP BY si.product_id
-                 ORDER BY profit DESC LIMIT 10"
+            $profitByProduct = $db->query(
+                "SELECT p.name,
+                    SUM(si.quantity)                               AS qty_sold,
+                    SUM(si.quantity * si.unit_price)               AS revenue,
+                    SUM(si.quantity * p.cost)                      AS cost,
+                    SUM(si.quantity * (si.unit_price - p.cost))    AS profit
+                   FROM sale_items si
+                   JOIN products p ON si.product_id = p.id
+                   JOIN sales s    ON si.sale_id = s.id
+                  WHERE s.status = 'paid' AND {$dw['sql']}
+                  GROUP BY si.product_id, p.name
+                  ORDER BY profit DESC
+                  LIMIT 10",
+                $dw['params']
             )->fetchAll();
         } catch (\PDOException $e) {
             // profit columns unavailable — skip silently
@@ -105,25 +124,42 @@ class ReportController extends Controller
             'topProducts'     => $topProducts,
             'profitRow'       => $profitRow ?: ['total_revenue' => 0, 'total_cost' => 0, 'gross_profit' => 0],
             'profitByProduct' => $profitByProduct ?: [],
+            'dateFrom'        => $from,
+            'dateTo'          => $to,
         ]);
     }
 
-    /** GET /reports/export/sales — تصدير مبيعات آخر 30 يوماً كـ CSV */
+    /** GET /reports/export/sales */
     public function exportSalesCsv(): void
     {
         AuthHelper::requireRole('admin');
-        $db = Database::getInstance();
-        $isPgsql = $db->getDriver() === 'pgsql';
-        $rows = $isPgsql
-            ? $db->query("SELECT (created_at::date) AS day, SUM(total) AS total, COUNT(*) AS count FROM sales WHERE status = 'paid' AND created_at >= (CURRENT_DATE - INTERVAL '30 days') GROUP BY (created_at::date) ORDER BY day ASC")->fetchAll()
-            : $db->query("SELECT DATE(created_at) AS day, SUM(total) AS total, COUNT(*) AS count FROM sales WHERE status = 'paid' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(created_at) ORDER BY day ASC")->fetchAll();
 
-        $filename = 'sales_report_' . date('Y-m-d') . '.csv';
+        $from = self::parseDate((string) ($_GET['from'] ?? '')) ?? date('Y-m-d', strtotime('-30 days'));
+        $to   = self::parseDate((string) ($_GET['to']   ?? '')) ?? date('Y-m-d');
+        if ($from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $db      = Database::getInstance();
+        $isPgsql = $db->getDriver() === 'pgsql';
+        $dw      = self::dateClause($isPgsql, $from, $to);
+        $dayCol  = $isPgsql ? "(created_at::date)" : "DATE(created_at)";
+
+        $rows = $db->query(
+            "SELECT {$dayCol} AS day, SUM(total) AS total, COUNT(*) AS count
+               FROM sales
+              WHERE status = 'paid' AND {$dw['sql']}
+              GROUP BY {$dayCol}
+              ORDER BY day ASC",
+            [':from' => $from, ':to' => $to]
+        )->fetchAll();
+
+        $filename = 'sales_report_' . $from . '_to_' . $to . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
 
         $out = fopen('php://output', 'w');
-        fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM
+        fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
         fputcsv($out, ['التاريخ', 'عدد الفواتير', 'الإجمالي (' . self::currencySymbol() . ')']);
         foreach ($rows as $r) {
             fputcsv($out, [$r['day'], (int) $r['count'], (float) $r['total']]);
@@ -132,22 +168,39 @@ class ReportController extends Controller
         exit;
     }
 
-    /** GET /reports/export/products — تصدير أكثر المنتجات مبيعاً كـ CSV */
+    /** GET /reports/export/products */
     public function exportTopProductsCsv(): void
     {
         AuthHelper::requireRole('admin');
-        $db = Database::getInstance();
-        $isPgsql = $db->getDriver() === 'pgsql';
-        $rows = $isPgsql
-            ? $db->query("SELECT p.name AS product_name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= (CURRENT_DATE - INTERVAL '30 days') GROUP BY si.product_id, p.name ORDER BY qty_sold DESC LIMIT 100")->fetchAll()
-            : $db->query("SELECT p.name AS product_name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status = 'paid' AND s.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 100")->fetchAll();
 
-        $filename = 'top_products_' . date('Y-m-d') . '.csv';
+        $from = self::parseDate((string) ($_GET['from'] ?? '')) ?? date('Y-m-d', strtotime('-30 days'));
+        $to   = self::parseDate((string) ($_GET['to']   ?? '')) ?? date('Y-m-d');
+        if ($from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $db      = Database::getInstance();
+        $isPgsql = $db->getDriver() === 'pgsql';
+        $dw      = self::dateClause($isPgsql, $from, $to);
+
+        $rows = $db->query(
+            "SELECT p.name AS product_name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue
+               FROM sale_items si
+               JOIN products p ON si.product_id = p.id
+               JOIN sales s    ON si.sale_id = s.id
+              WHERE s.status = 'paid' AND {$dw['sql']}
+              GROUP BY si.product_id, p.name
+              ORDER BY qty_sold DESC
+              LIMIT 100",
+            [':from' => $from, ':to' => $to]
+        )->fetchAll();
+
+        $filename = 'top_products_' . $from . '_to_' . $to . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
 
         $out = fopen('php://output', 'w');
-        fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+        fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
         fputcsv($out, ['المنتج', 'الكمية المباعة', 'الإيراد (' . self::currencySymbol() . ')']);
         foreach ($rows as $r) {
             fputcsv($out, [$r['product_name'], (int) $r['qty_sold'], (float) $r['revenue']]);

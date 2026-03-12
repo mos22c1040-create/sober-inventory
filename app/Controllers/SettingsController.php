@@ -36,8 +36,10 @@ class SettingsController extends Controller
             $this->jsonResponse(['error' => 'رمز الأمان منتهٍ.'], 403);
         }
 
-        $appName        = trim(Security::sanitizeString((string) ($input['app_name']        ?? ''), 100));
-        $currencySymbol = trim(Security::sanitizeString((string) ($input['currency_symbol'] ?? ''), 10));
+        $appName         = trim(Security::sanitizeString((string) ($input['app_name']        ?? ''), 100));
+        $currencySymbol  = trim(Security::sanitizeString((string) ($input['currency_symbol'] ?? ''), 10));
+        $timezoneInput   = trim((string) ($input['timezone']         ?? ''));
+        $sessionLifetime = max(300, min(86400, (int) ($input['session_lifetime'] ?? 3600)));
 
         if ($appName === '') {
             $appName = 'نظام المخزون';
@@ -46,9 +48,16 @@ class SettingsController extends Controller
             $currencySymbol = 'د.ع';
         }
 
+        // Validate timezone — must be a known PHP timezone identifier
+        $timezone = in_array($timezoneInput, timezone_identifiers_list(), true)
+            ? $timezoneInput
+            : 'Asia/Baghdad';
+
         $data = [
-            'app_name'        => $appName,
-            'currency_symbol' => $currencySymbol,
+            'app_name'         => $appName,
+            'currency_symbol'  => $currencySymbol,
+            'timezone'         => $timezone,
+            'session_lifetime' => $sessionLifetime,
         ];
 
         // Primary: persist to the database (survives container restarts on Railway).
