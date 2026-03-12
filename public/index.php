@@ -91,6 +91,8 @@ $router->post('/api/logout', 'AuthController@logout');
 $router->get('/', 'HomeController@index');
 $router->get('/dashboard', 'DashboardController@index');
 $router->get('/pos', 'PosController@index');
+$router->get('/api/pos/products', 'PosController@products');
+$router->post('/api/pos/complete', 'PosController@complete');
 
 // Products
 $router->get('/products', 'ProductController@index');

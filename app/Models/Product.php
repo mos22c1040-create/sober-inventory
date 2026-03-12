@@ -154,6 +154,37 @@ class Product
         return $stmt->rowCount() > 0;
     }
 
+    /**
+     * قائمة المنتجات لواجهة POS مع دعم البحث النصي في قاعدة البيانات.
+     * يُعيد الحقول التي يحتاجها POS فقط (id, name, sku, price, quantity, low_stock_threshold).
+     */
+    public static function allForPos(string $search = '', int $limit = 300): array
+    {
+        $db     = Database::getInstance();
+        $limit  = max(1, min(1000, $limit));
+
+        if ($search !== '') {
+            $like  = '%' . $search . '%';
+            $stmt  = $db->query(
+                "SELECT id, name, sku, price, quantity, low_stock_threshold
+                   FROM products
+                  WHERE name LIKE :like OR sku LIKE :like2
+                  ORDER BY name ASC
+                  LIMIT " . $limit,
+                [':like' => $like, ':like2' => $like]
+            );
+        } else {
+            $stmt = $db->query(
+                "SELECT id, name, sku, price, quantity, low_stock_threshold
+                   FROM products
+                  ORDER BY name ASC
+                  LIMIT " . $limit
+            );
+        }
+
+        return $stmt->fetchAll();
+    }
+
     /** البحث عن منتج بالاسم أو الرمز (SKU) — للأوتوكومبليت. */
     public static function search(string $q, int $limit = 10): array
     {

@@ -37,33 +37,45 @@ class Purchase
 
     public static function create(int $userId, array $items, string $supplier = ''): int
     {
-        $db = Database::getInstance();
+        $db    = Database::getInstance();
         $total = 0.0;
         foreach ($items as $item) {
             $total += (float) $item['total'];
         }
-        $db->query(
-            "INSERT INTO purchases (user_id, supplier, total, status) VALUES (:user_id, :supplier, :total, 'completed')",
-            [
-                ':user_id' => $userId,
-                ':supplier' => $supplier,
-                ':total' => $total,
-            ]
-        );
-        $purchaseId = (int) $db->getConnection()->lastInsertId();
-        foreach ($items as $item) {
+
+        $db->beginTransaction();
+        try {
             $db->query(
-                "INSERT INTO purchase_items (purchase_id, product_id, quantity, unit_cost, total) VALUES (:purchase_id, :product_id, :quantity, :unit_cost, :total)",
+                "INSERT INTO purchases (user_id, supplier, total, status) VALUES (:user_id, :supplier, :total, 'completed')",
                 [
-                    ':purchase_id' => $purchaseId,
-                    ':product_id' => $item['product_id'],
-                    ':quantity' => $item['quantity'],
-                    ':unit_cost' => $item['unit_cost'],
-                    ':total' => $item['total'],
+                    ':user_id'  => $userId,
+                    ':supplier' => $supplier,
+                    ':total'    => $total,
                 ]
             );
-            Product::incrementStock((int) $item['product_id'], (int) $item['quantity']);
+            $purchaseId = $db->lastInsertId();
+
+            foreach ($items as $item) {
+                $db->query(
+                    "INSERT INTO purchase_items (purchase_id, product_id, quantity, unit_cost, total)
+                     VALUES (:purchase_id, :product_id, :quantity, :unit_cost, :total)",
+                    [
+                        ':purchase_id' => $purchaseId,
+                        ':product_id'  => $item['product_id'],
+                        ':quantity'    => $item['quantity'],
+                        ':unit_cost'   => $item['unit_cost'],
+                        ':total'       => $item['total'],
+                    ]
+                );
+                Product::incrementStock((int) $item['product_id'], (int) $item['quantity']);
+            }
+
+            $db->commit();
+        } catch (\Exception $e) {
+            $db->rollBack();
+            throw $e;
         }
+
         return $purchaseId;
     }
 }

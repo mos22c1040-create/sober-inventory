@@ -24,15 +24,8 @@ class PosController extends Controller
     public function products(): void
     {
         AuthHelper::requireAuth();
-        $products = Product::all(false);
-        $search = isset($_GET['q']) ? trim($_GET['q']) : '';
-        if ($search !== '') {
-            $q = Security::sanitizeString($search);
-            $products = array_filter($products, function ($p) use ($q) {
-                return stripos($p['name'], $q) !== false || stripos((string) $p['sku'], $q) !== false;
-            });
-            $products = array_values($products);
-        }
+        $search   = isset($_GET['q']) ? Security::sanitizeString(trim($_GET['q'])) : '';
+        $products = Product::allForPos($search);
         $this->jsonResponse(['products' => $products]);
     }
 
