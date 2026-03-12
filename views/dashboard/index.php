@@ -6,86 +6,117 @@ $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
 $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 ?>
 
-<header class="page-header">
-    <h1 class="page-title">لوحة التحكم</h1>
-    <p class="page-subtitle">نظرة عامة على المخزون والمبيعات</p>
+<header class="page-header flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <h1 class="page-title">لوحة التحكم</h1>
+        <p class="page-subtitle">نظرة عامة على المخزون والمبيعات</p>
+    </div>
+    <a href="/pos" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200 focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
+       style="background: linear-gradient(135deg, rgb(5 150 105), rgb(16 185 129)); box-shadow: 0 4px 12px rgb(5 150 105 / 0.35);">
+        <i class="fa-solid fa-cash-register"></i> نقطة البيع
+    </a>
 </header>
 
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8 stagger-children">
-    
-    <div class="app-card p-6 group">
-        <div class="flex justify-between items-start">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-widest" style="color: rgb(var(--muted-foreground));">مبيعات اليوم</p>
-                <h3 class="stat-value text-2xl md:text-3xl font-bold mt-1.5" style="color: rgb(var(--foreground));"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($todaySales ?? 0), 0) ?></h3>
-            </div>
-            <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
+<!-- ─── Stats Row ─────────────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-7 stagger-children">
+
+    <!-- مبيعات اليوم -->
+    <div class="stat-card">
+        <div class="flex items-start justify-between mb-3">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                 style="background: rgb(219 234 254); color: rgb(var(--primary));">
                 <i class="fa-solid fa-money-bill-wave text-lg" aria-hidden="true"></i>
             </div>
+            <span class="badge badge-info">اليوم</span>
         </div>
-        <p class="mt-4 text-sm font-medium" style="color: rgb(var(--muted-foreground));"><?= (int)($todayCount ?? 0) ?> فاتورة اليوم</p>
-    </div>
-
-    <div class="app-card p-6 group">
-        <div class="flex justify-between items-start">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-widest" style="color: rgb(var(--muted-foreground));">عدد الفواتير</p>
-                <h3 class="stat-value text-2xl md:text-3xl font-bold mt-1.5" style="color: rgb(var(--foreground));"><?= (int)($todayCount ?? 0) ?></h3>
-            </div>
-            <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
-                <i class="fa-solid fa-receipt text-lg" aria-hidden="true"></i>
-            </div>
-        </div>
-        <p class="mt-4 text-sm font-medium" style="color: rgb(var(--muted-foreground));">المبيعات المكتملة اليوم</p>
-    </div>
-
-    <div class="app-card p-6 group">
-        <div class="flex justify-between items-start">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-widest" style="color: rgb(var(--muted-foreground));">إجمالي المنتجات</p>
-                <h3 class="stat-value text-2xl md:text-3xl font-bold mt-1.5" style="color: rgb(var(--foreground));"><?= (int)($productCount ?? 0) ?></h3>
-            </div>
-            <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
-                <i class="fa-solid fa-boxes-stacked text-lg" aria-hidden="true"></i>
-            </div>
-        </div>
-        <p class="mt-4 text-sm font-medium flex items-center gap-1.5" style="color: rgb(var(--muted-foreground));">
-            <span class="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true"></span> في الكتالوج
+        <p class="text-[11px] font-bold uppercase tracking-widest mb-1" style="color: rgb(var(--muted-foreground));">مبيعات اليوم</p>
+        <h3 class="stat-value text-2xl font-extrabold" style="color: rgb(var(--foreground));">
+            <?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($todaySales ?? 0), 0) ?>
+        </h3>
+        <p class="mt-2 text-xs font-semibold" style="color: rgb(var(--muted-foreground));">
+            <i class="fa-solid fa-receipt me-1" aria-hidden="true"></i><?= (int)($todayCount ?? 0) ?> فاتورة
         </p>
     </div>
 
-    <div class="app-card p-6 group relative overflow-hidden" style="border-color: rgb(254 202 202);">
-        <div class="absolute top-0 right-0 w-1 h-full rounded-l" style="background: rgb(var(--color-danger));"></div>
-        <div class="flex justify-between items-start">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-widest" style="color: rgb(var(--color-danger));">منخفضة المخزون</p>
-                <h3 class="stat-value text-2xl md:text-3xl font-bold mt-1.5" style="color: rgb(var(--foreground));"><?= (int)($lowStockCount ?? 0) ?></h3>
+    <!-- عدد الفواتير -->
+    <div class="stat-card">
+        <div class="flex items-start justify-between mb-3">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                 style="background: rgb(var(--color-success-light)); color: rgb(var(--color-success));">
+                <i class="fa-solid fa-receipt text-lg" aria-hidden="true"></i>
             </div>
-            <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style="background: rgb(var(--color-danger)); color: white;">
-                <i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i>
-            </div>
+            <span class="badge badge-success">مكتملة</span>
         </div>
-        <a href="<?= $basePathSafe ?? '' ?>/products" class="mt-4 inline-flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700">
-            إعادة تخزين <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i>
-        </a>
+        <p class="text-[11px] font-bold uppercase tracking-widest mb-1" style="color: rgb(var(--muted-foreground));">عدد الفواتير</p>
+        <h3 class="stat-value text-2xl font-extrabold" style="color: rgb(var(--foreground));">
+            <?= (int)($todayCount ?? 0) ?>
+        </h3>
+        <p class="mt-2 text-xs font-semibold" style="color: rgb(var(--muted-foreground));">
+            <i class="fa-solid fa-clock me-1" aria-hidden="true"></i>المبيعات المكتملة اليوم
+        </p>
+    </div>
+
+    <!-- إجمالي المنتجات -->
+    <div class="stat-card">
+        <div class="flex items-start justify-between mb-3">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                 style="background: rgb(237 233 254); color: rgb(109 40 217);">
+                <i class="fa-solid fa-boxes-stacked text-lg" aria-hidden="true"></i>
+            </div>
+            <span class="badge" style="background: rgb(237 233 254); color: rgb(109 40 217);">الكتالوج</span>
+        </div>
+        <p class="text-[11px] font-bold uppercase tracking-widest mb-1" style="color: rgb(var(--muted-foreground));">إجمالي المنتجات</p>
+        <h3 class="stat-value text-2xl font-extrabold" style="color: rgb(var(--foreground));">
+            <?= (int)($productCount ?? 0) ?>
+        </h3>
+        <p class="mt-2 text-xs font-semibold flex items-center gap-1.5" style="color: rgb(var(--muted-foreground));">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block" aria-hidden="true"></span>نشطة في المخزون
+        </p>
+    </div>
+
+    <!-- منخفضة المخزون -->
+    <div class="stat-card" style="border-color: rgb(254 202 202);">
+        <div class="absolute inset-0 rounded-xl opacity-30 pointer-events-none"
+             style="background: linear-gradient(135deg, rgb(254 226 226) 0%, transparent 60%);"></div>
+        <div class="relative z-10">
+            <div class="flex items-start justify-between mb-3">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                     style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
+                    <i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i>
+                </div>
+                <span class="badge badge-danger">تنبيه</span>
+            </div>
+            <p class="text-[11px] font-bold uppercase tracking-widest mb-1" style="color: rgb(var(--color-danger));">منخفضة المخزون</p>
+            <h3 class="stat-value text-2xl font-extrabold" style="color: rgb(var(--foreground));">
+                <?= (int)($lowStockCount ?? 0) ?>
+            </h3>
+            <a href="/products" class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200 cursor-pointer"
+               style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
+                إعادة تخزين <i class="fa-solid fa-arrow-left text-[10px]" aria-hidden="true"></i>
+            </a>
+        </div>
     </div>
 </div>
 
-<!-- مخطط وجدول المبيعات -->
-<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-    <div class="xl:col-span-2 app-card-flat p-6 flex flex-col">
-        <div class="flex justify-between items-center mb-4">
+<!-- ─── Chart + Recent Sales ──────────────────────────────────────────── -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+    <!-- مخطط المبيعات -->
+    <div class="xl:col-span-2 app-card-flat p-5 flex flex-col animate-slide-up" style="animation-delay:100ms;">
+        <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
             <div>
-                <h3 class="text-lg font-bold" style="color: rgb(var(--foreground));">نظرة عامة على المبيعات</h3>
-                <p class="text-xs font-medium mt-1" style="color: rgb(var(--muted-foreground));">إيرادات آخر 7 أيام</p>
+                <h3 class="text-base font-bold" style="color: rgb(var(--foreground));">نظرة عامة على المبيعات</h3>
+                <p class="text-xs font-medium mt-0.5" style="color: rgb(var(--muted-foreground));">إيرادات آخر 7 أيام</p>
             </div>
             <?php
             $chartDays = $dailyTotals ?? [];
             $weekTotal = array_sum(array_column($chartDays, 'total'));
             ?>
-            <div class="text-left">
-                <p class="text-xs font-medium" style="color: rgb(var(--muted-foreground));">إجمالي الأسبوع</p>
-                <p class="text-lg font-bold" style="color: rgb(var(--primary));"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$weekTotal, 0) ?></p>
+            <div class="text-end">
+                <p class="text-[11px] font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">إجمالي الأسبوع</p>
+                <p class="text-xl font-extrabold mt-0.5 stat-value" style="color: rgb(var(--primary));">
+                    <?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$weekTotal, 0) ?>
+                </p>
             </div>
         </div>
         <div class="relative flex-1 min-h-[240px]">
@@ -99,22 +130,26 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
             var canvas = document.getElementById('salesChart');
             if (!canvas || typeof Chart === 'undefined') return;
             var ctx = canvas.getContext('2d');
-            var grad = ctx.createLinearGradient(0, 0, 0, 240);
-            grad.addColorStop(0, 'rgba(59,130,246,0.25)');
-            grad.addColorStop(1, 'rgba(59,130,246,0.01)');
+            var grad = ctx.createLinearGradient(0, 0, 0, 280);
+            grad.addColorStop(0, 'rgba(37,99,235,0.18)');
+            grad.addColorStop(0.7, 'rgba(37,99,235,0.04)');
+            grad.addColorStop(1, 'rgba(37,99,235,0)');
             new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
                         data: values,
-                        borderColor: 'rgb(59,130,246)',
+                        borderColor: 'rgb(37,99,235)',
                         backgroundColor: grad,
                         borderWidth: 2.5,
-                        pointBackgroundColor: 'rgb(59,130,246)',
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: 'rgb(37,99,235)',
+                        pointBorderWidth: 2,
                         pointRadius: 4,
-                        pointHoverRadius: 6,
-                        tension: 0.4,
+                        pointHoverRadius: 7,
+                        pointHoverBackgroundColor: 'rgb(37,99,235)',
+                        tension: 0.45,
                         fill: true
                     }]
                 },
@@ -125,17 +160,28 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
                         legend: { display: false },
                         tooltip: {
                             rtl: true,
+                            padding: 10,
+                            backgroundColor: 'rgb(15 23 42)',
+                            titleColor: 'rgb(148 163 184)',
+                            bodyColor: '#fff',
+                            cornerRadius: 10,
                             callbacks: {
                                 label: function(ctx) { return ' ' + sym + ' ' + ctx.parsed.y.toLocaleString(); }
                             }
                         }
                     },
                     scales: {
-                        x: { grid: { display: false }, ticks: { font: { family: 'Tajawal, sans-serif', size: 12 } } },
+                        x: {
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: { font: { family: 'Tajawal, sans-serif', size: 11 }, color: 'rgb(100 116 139)' }
+                        },
                         y: {
-                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+                            border: { display: false },
                             ticks: {
                                 font: { family: 'Tajawal, sans-serif', size: 11 },
+                                color: 'rgb(100 116 139)',
                                 callback: function(v) { return sym + ' ' + Number(v).toLocaleString(); }
                             }
                         }
@@ -147,18 +193,24 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
     </div>
 
     <!-- آخر المبيعات -->
-    <div class="app-card-flat p-6 flex flex-col relative overflow-hidden">
-        <div class="absolute -right-8 -top-8 w-28 h-28 bg-slate-100 rounded-full opacity-60"></div>
-        <div class="flex justify-between items-center mb-5 relative z-10">
-            <h3 class="text-lg font-bold text-slate-800">آخر المبيعات</h3>
-            <a href="<?= ($basePathSafe ?? '') . ($isAdmin ? '/reports' : '/sales') ?>" class="touch-target flex items-center justify-center text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer" aria-label="<?= $isAdmin ? 'التقارير' : 'المبيعات' ?>">
-                <i class="fa-solid fa-<?= $isAdmin ? 'chart-pie' : 'list' ?> text-sm"></i>
+    <div class="app-card-flat p-5 flex flex-col animate-slide-up" style="animation-delay:200ms;">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h3 class="text-base font-bold" style="color: rgb(var(--foreground));">آخر المبيعات</h3>
+                <p class="text-xs font-medium mt-0.5" style="color: rgb(var(--muted-foreground));">أحدث الفواتير المسجّلة</p>
+            </div>
+            <a href="<?= $isAdmin ? '/reports' : '/sales' ?>"
+               class="w-9 h-9 flex items-center justify-center rounded-xl transition-colors duration-200 focus:ring-2 focus:ring-blue-400 cursor-pointer"
+               style="background: rgb(219 234 254); color: rgb(var(--primary));"
+               aria-label="<?= $isAdmin ? 'التقارير' : 'المبيعات' ?>">
+                <i class="fa-solid fa-<?= $isAdmin ? 'chart-pie' : 'list' ?> text-sm" aria-hidden="true"></i>
             </a>
         </div>
-        <div class="flex-1 overflow-y-auto space-y-4 pr-2 relative z-10 min-h-[200px]">
-            <?php 
+
+        <div class="flex-1 overflow-y-auto space-y-2 min-h-[200px]">
+            <?php
             $recentSales = $recentSales ?? [];
-            if (empty($recentSales)): 
+            if (empty($recentSales)):
             ?>
             <div class="empty-state py-8">
                 <div class="empty-state-icon"><i class="fa-solid fa-receipt"></i></div>
@@ -166,31 +218,40 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
                 <a href="<?= $basePathSafe ?? '' ?>/sales/create" class="inline-block mt-3 text-sm font-bold text-blue-600 hover:text-blue-700">إنشاء فاتورة</a>
             </div>
             <?php else: ?>
-            <?php foreach ($recentSales as $sale): 
-                $statusClass = $sale['status'] === 'paid' ? 'bg-emerald-100 text-emerald-700' : ($sale['status'] === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700');
-                $payLabel = $sale['payment_method'] === 'card' ? 'بطاقة' : 'نقدي';
+            <?php foreach ($recentSales as $sale):
+                $payMethod = $sale['payment_method'] ?? 'cash';
+                $payLabel  = $payMethod === 'card' ? 'بطاقة' : ($payMethod === 'mixed' ? 'مختلط' : 'نقدي');
+                $statusBg  = $sale['status'] === 'paid' ? 'badge-success' : ($sale['status'] === 'pending' ? 'badge-warning' : 'badge-neutral');
             ?>
-            <div class="flex items-center justify-between group cursor-pointer hover:bg-slate-50 p-2 -mx-2 rounded-xl transition-colors">
-                <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center border border-emerald-200 group-hover:scale-105 transition-transform">
-                        <i class="fa-solid fa-receipt"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-bold text-slate-800"><?= htmlspecialchars($sale['invoice_number'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
-                        <p class="text-xs font-medium text-slate-400 mt-0.5"><?= htmlspecialchars($sale['customer_name'] ?? 'زائر', ENT_QUOTES, 'UTF-8') ?> &bull; <?= date('Y/m/j g:i A', strtotime($sale['created_at'] ?? 'now')) ?></p>
-                    </div>
+            <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl transition-colors duration-150 hover:bg-slate-50 cursor-default group">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105"
+                     style="background: rgb(var(--color-success-light)); color: rgb(var(--color-success));">
+                    <i class="fa-solid fa-receipt text-sm" aria-hidden="true"></i>
                 </div>
-                <div class="text-right">
-                    <p class="text-sm font-bold text-slate-800"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($sale['total'] ?? 0), 0) ?></p>
-                    <span class="inline-flex items-center px-2 py-0.5 mt-1 rounded text-[10px] font-bold <?= $statusClass ?>"><?= $payLabel ?></span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold truncate" style="color: rgb(var(--foreground));">
+                        <?= htmlspecialchars($sale['invoice_number'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                    </p>
+                    <p class="text-xs truncate" style="color: rgb(var(--muted-foreground));">
+                        <?= htmlspecialchars($sale['customer_name'] ?? 'زائر', ENT_QUOTES, 'UTF-8') ?>
+                    </p>
+                </div>
+                <div class="text-end shrink-0">
+                    <p class="text-sm font-bold" style="color: rgb(var(--foreground));">
+                        <?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($sale['total'] ?? 0), 0) ?>
+                    </p>
+                    <span class="badge <?= $statusBg ?> mt-0.5"><?= $payLabel ?></span>
                 </div>
             </div>
             <?php endforeach; ?>
             <?php endif; ?>
         </div>
-        
-        <a href="<?= ($basePathSafe ?? '') . ($isAdmin ? '/reports' : '/sales') ?>" class="mt-4 block w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-blue-600 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all text-center cursor-pointer">
-            <i class="fa-solid fa-list text-xs"></i> عرض كل المبيعات
+
+        <a href="<?= $isAdmin ? '/reports' : '/sales' ?>"
+           class="mt-4 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 border-2 hover:text-blue-600 cursor-pointer"
+           style="border-color: rgb(var(--border)); color: rgb(var(--muted-foreground));">
+            <i class="fa-solid fa-list text-xs" aria-hidden="true"></i>
+            عرض كل المبيعات
         </a>
     </div>
 </div>

@@ -44,46 +44,76 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 
 <div id="barcode-result" class="hidden mb-4 rounded-xl p-4 border text-sm font-medium" role="alert"></div>
 
-<div class="app-card-flat overflow-hidden">
+<div class="rounded-2xl border overflow-hidden" style="border-color: rgb(var(--border)); background: rgb(var(--card)); box-shadow: 0 2px 12px rgb(0 0 0 / 0.04);">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y" style="border-color: rgb(var(--border));">
-            <thead style="background: rgb(var(--muted));">
-                <tr>
-                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">الاسم</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">الرمز</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">التصنيف</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">السعر</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">المخزون</th>
-                    <?php if ($isAdmin): ?><th class="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">إجراءات</th><?php endif; ?>
+            <thead>
+                <tr style="background: rgb(var(--muted));">
+                    <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">المنتج</th>
+                    <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">الرمز (SKU)</th>
+                    <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">التصنيف</th>
+                    <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">السعر</th>
+                    <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">المخزون</th>
+                    <?php if ($isAdmin): ?><th class="px-6 py-3.5 text-center text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">إجراءات</th><?php endif; ?>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody class="divide-y" style="border-color: rgb(var(--border));">
                 <?php if (empty($products)): ?>
                 <tr><td colspan="<?= $isAdmin ? 6 : 5 ?>" class="px-6 py-16">
                     <div class="empty-state">
                         <div class="empty-state-icon mx-auto"><i class="fa-solid fa-box-open"></i></div>
-                        <p class="font-medium text-slate-600">لا توجد منتجات بعد</p>
-                        <?php if ($isAdmin): ?><a href="<?= $bp ?>/products/create" class="inline-flex items-center gap-2 mt-3 text-sm font-bold text-blue-600 hover:text-blue-700"><i class="fa-solid fa-plus"></i> إضافة منتج</a><?php endif; ?>
+                        <p class="font-semibold" style="color: rgb(var(--muted-foreground));">لا توجد منتجات بعد</p>
+                        <?php if ($isAdmin): ?><a href="<?= $bp ?>/products/create" class="inline-flex items-center gap-2 mt-3 text-sm font-bold" style="color: rgb(var(--primary));"><i class="fa-solid fa-plus"></i> إضافة منتج</a><?php endif; ?>
                     </div>
                 </td></tr>
                 <?php else: ?>
-                <?php foreach ($products as $p): 
-                    $lowStock = isset($p['low_stock_threshold']) && $p['quantity'] <= $p['low_stock_threshold'] && $p['low_stock_threshold'] > 0;
+                <?php foreach ($products as $p):
+                    $qty      = (int)$p['quantity'];
+                    $thresh   = (int)($p['low_stock_threshold'] ?? 0);
+                    $outOfStock = $qty <= 0;
+                    $lowStock   = !$outOfStock && $thresh > 0 && $qty <= $thresh;
                 ?>
-                <tr class="app-table-row transition-colors duration-200" data-product-id="<?= (int)$p['id'] ?>" data-sku="<?= htmlspecialchars($p['sku'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                    <td class="px-6 py-4 text-sm font-medium text-slate-800"><?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($p['sku'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
-                    <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($p['category_name'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
-                    <td class="px-6 py-4 text-sm text-right font-medium text-slate-800"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$p['price'], 0) ?></td>
-                    <td class="px-6 py-4 text-right">
-                        <span class="text-sm font-medium <?= $lowStock ? 'text-red-600' : 'text-slate-800' ?>"><?= (int)$p['quantity'] ?></span>
-                        <span class="text-xs ms-1" style="color: rgb(var(--muted-foreground));"><?= htmlspecialchars($p['unit'] ?? 'قطعة', ENT_QUOTES, 'UTF-8') ?></span>
-                        <?php if ($lowStock): ?><span class="ms-1 text-xs text-red-500 font-bold">(منخفض)</span><?php endif; ?>
+                <tr class="group transition-colors duration-150 hover:bg-blue-50/30" data-product-id="<?= (int)$p['id'] ?>" data-sku="<?= htmlspecialchars($p['sku'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                    <td class="px-6 py-3.5">
+                        <span class="text-sm font-semibold" style="color: rgb(var(--foreground));"><?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                    </td>
+                    <td class="px-6 py-3.5">
+                        <?php if (!empty($p['sku'])): ?>
+                        <code class="text-xs px-2 py-0.5 rounded-lg font-mono" style="background: rgb(var(--muted)); color: rgb(var(--foreground));"><?= htmlspecialchars($p['sku'], ENT_QUOTES, 'UTF-8') ?></code>
+                        <?php else: ?><span class="text-xs" style="color: rgb(var(--muted-foreground));">—</span><?php endif; ?>
+                    </td>
+                    <td class="px-6 py-3.5">
+                        <?php if (!empty($p['category_name'])): ?>
+                        <span class="badge badge-neutral"><?= htmlspecialchars($p['category_name'], ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php else: ?><span class="text-xs" style="color: rgb(var(--muted-foreground));">—</span><?php endif; ?>
+                    </td>
+                    <td class="px-6 py-3.5">
+                        <span class="text-sm font-extrabold" style="color: rgb(var(--primary));"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$p['price'], 0) ?></span>
+                    </td>
+                    <td class="px-6 py-3.5">
+                        <?php if ($outOfStock): ?>
+                        <span class="badge" style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">نفد · 0</span>
+                        <?php elseif ($lowStock): ?>
+                        <span class="badge badge-warning">منخفض · <?= $qty ?> <?= htmlspecialchars($p['unit'] ?? 'قطعة', ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php else: ?>
+                        <span class="badge badge-success"><?= $qty ?> <?= htmlspecialchars($p['unit'] ?? 'قطعة', ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php endif; ?>
                     </td>
                     <?php if ($isAdmin): ?>
-                    <td class="px-6 py-4 text-center">
-                        <a href="<?= $bp ?>/products/edit?id=<?= (int)$p['id'] ?>" class="text-blue-600 hover:text-blue-800 text-sm font-medium ms-3">تعديل</a>
-                        <button type="button" onclick="deleteProduct(<?= (int)$p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name']), ENT_QUOTES, 'UTF-8') ?>')" class="text-red-600 hover:text-red-800 text-sm font-medium">حذف</button>
+                    <td class="px-6 py-3.5 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <a href="<?= $bp ?>/products/edit?id=<?= (int)$p['id'] ?>"
+                               class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                               style="background: rgb(var(--primary) / 0.08); color: rgb(var(--primary));">
+                                <i class="fa-solid fa-pen-to-square text-[10px]" aria-hidden="true"></i>تعديل
+                            </a>
+                            <button type="button"
+                                    onclick="deleteProduct(<?= (int)$p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name']), ENT_QUOTES, 'UTF-8') ?>')"
+                                    class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                                    style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
+                                <i class="fa-solid fa-trash text-[10px]" aria-hidden="true"></i>حذف
+                            </button>
+                        </div>
                     </td>
                     <?php endif; ?>
                 </tr>

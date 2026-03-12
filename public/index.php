@@ -90,6 +90,7 @@ $router->post('/api/logout', 'AuthController@logout');
 // Define some basic routes
 $router->get('/', 'HomeController@index');
 $router->get('/dashboard', 'DashboardController@index');
+$router->get('/pos', 'PosController@index');
 
 // Products
 $router->get('/products', 'ProductController@index');
