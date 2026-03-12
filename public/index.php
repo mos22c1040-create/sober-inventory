@@ -184,7 +184,21 @@ if ($uri === '' || $uri === false) {
     $uri = '/';
 }
 
-// Let the router handle the current request
 $method = $_SERVER['REQUEST_METHOD'];
+
+// CORS: allow Flutter web (localhost) and mobile app to call API
+$isApi = (strpos($uri, '/api/') === 0);
+if ($isApi && !headers_sent()) {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Accept');
+    header('Access-Control-Max-Age: 86400');
+}
+if ($method === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Let the router handle the current request
 $router->route($uri, $method);
 
