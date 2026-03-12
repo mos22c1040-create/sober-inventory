@@ -11,6 +11,7 @@ use App\Helpers\Security;
 use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Product;
+use App\Validators\ProductValidator;
 
 class ProductController extends Controller
 {
@@ -50,22 +51,13 @@ class ProductController extends Controller
         if (!Security::validateCsrfToken($csrf)) {
             $this->jsonResponse(['error' => 'Invalid CSRF token'], 403);
         }
-        $name = trim($input['name'] ?? '');
-        if ($name === '') {
-            $this->jsonResponse(['error' => 'Product name is required'], 400);
+        $result = ProductValidator::validate($input);
+        if (!$result['valid']) {
+            $this->jsonResponse(['error' => implode(' | ', $result['errors'])], 400);
         }
-        $name = Security::sanitizeString($name);
-        $data = [
-            'name' => $name,
-            'category_id' => $input['category_id'] ?? null,
-            'sku' => isset($input['sku']) ? Security::sanitizeString($input['sku']) : null,
-            'price' => (float) ($input['price'] ?? 0),
-            'cost' => (float) ($input['cost'] ?? 0),
-            'quantity' => (int) ($input['quantity'] ?? 0),
-            'low_stock_threshold' => (int) ($input['low_stock_threshold'] ?? 5),
-        ];
+        $data = $result['data'];
         $id = Product::create($data);
-        ActivityLog::log('product.create', 'product', $id, $name);
+        ActivityLog::log('product.create', 'product', $id, (string) $data['name']);
         FileCache::delete('dashboard_product_count');
         $this->jsonResponse(['success' => true, 'id' => $id, 'redirect' => '/products'], 201);
     }
@@ -76,8 +68,7 @@ class ProductController extends Controller
         $id = (int) ($_GET['id'] ?? 0);
         $product = $id ? Product::find($id) : null;
         if (!$product) {
-            http_response_code(404);
-            require BASE_PATH . '/views/404.php';
+            $this->renderNotFound('404');
             return;
         }
         $categories = Category::all();
@@ -104,21 +95,13 @@ class ProductController extends Controller
         if (!$product) {
             $this->jsonResponse(['error' => 'Product not found'], 404);
         }
-        $name = trim($input['name'] ?? '');
-        if ($name === '') {
-            $this->jsonResponse(['error' => 'Product name is required'], 400);
+        $result = ProductValidator::validate($input);
+        if (!$result['valid']) {
+            $this->jsonResponse(['error' => implode(' | ', $result['errors'])], 400);
         }
-        $data = [
-            'name' => Security::sanitizeString($name),
-            'category_id' => $input['category_id'] ?? null,
-            'sku' => isset($input['sku']) ? Security::sanitizeString($input['sku']) : null,
-            'price' => (float) ($input['price'] ?? 0),
-            'cost' => (float) ($input['cost'] ?? 0),
-            'quantity' => (int) ($input['quantity'] ?? 0),
-            'low_stock_threshold' => (int) ($input['low_stock_threshold'] ?? 5),
-        ];
+        $data = $result['data'];
         Product::update($id, $data);
-        ActivityLog::log('product.update', 'product', $id, Security::sanitizeString($name));
+        ActivityLog::log('product.update', 'product', $id, (string) $data['name']);
         $this->jsonResponse(['success' => true, 'redirect' => '/products']);
     }
 

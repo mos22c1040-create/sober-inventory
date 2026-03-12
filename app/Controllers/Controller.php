@@ -36,4 +36,34 @@ abstract class Controller
         echo json_encode($data);
         exit;
     }
+
+    /**
+     * Render a standard 404 view.
+     */
+    protected function renderNotFound(string $view = '404'): void
+    {
+        http_response_code(404);
+        $file = BASE_PATH . "/views/{$view}.php";
+
+        if (!file_exists($file)) {
+            throw new \RuntimeException("NotFound view [{$view}] not found at [{$file}].");
+        }
+
+        require $file;
+    }
+
+    /**
+     * Render a standard 403 view.
+     */
+    protected function renderForbidden(string $view = '403'): void
+    {
+        http_response_code(403);
+        $file = BASE_PATH . "/views/{$view}.php";
+
+        if (!file_exists($file)) {
+            throw new \RuntimeException("Forbidden view [{$view}] not found at [{$file}].");
+        }
+
+        require $file;
+    }
 }

@@ -6,8 +6,17 @@ namespace App\Helpers;
 
 class BarcodeBridge
 {
-    private const DIRECTORY   = '/storage/barcode_bridge';
-    private const TTL_SECONDS = 60;
+    private const DIRECTORY = '/storage/barcode_bridge';
+
+    /**
+     * Resolve TTL (seconds) from env, with a safe fallback.
+     */
+    private static function ttl(): int
+    {
+        $raw  = $_ENV['BARCODE_BRIDGE_TTL'] ?? getenv('BARCODE_BRIDGE_TTL') ?: '60';
+        $ttl  = (int) $raw;
+        return $ttl > 0 ? $ttl : 60;
+    }
 
     /**
      * Persist the scanned barcode for a given user.
@@ -15,6 +24,7 @@ class BarcodeBridge
     public static function push(int $userId, string $barcode): bool
     {
         if ($userId < 1 || $barcode === '') {
+            error_log(sprintf('BarcodeBridge push rejected: invalid userId (%d) or empty barcode', $userId));
             return false;
         }
 
@@ -35,6 +45,7 @@ class BarcodeBridge
 
         $json = json_encode($data, JSON_UNESCAPED_UNICODE);
         if ($json === false) {
+            error_log('BarcodeBridge json_encode failed for userId ' . $userId);
             return false;
         }
 
@@ -54,6 +65,7 @@ class BarcodeBridge
     public static function consumeLast(int $userId): ?array
     {
         if ($userId < 1) {
+            error_log('BarcodeBridge consumeLast called with invalid userId: ' . $userId);
             return null;
         }
 
@@ -67,11 +79,13 @@ class BarcodeBridge
         @unlink($file);
 
         if ($raw === false || $raw === '') {
+            error_log('BarcodeBridge consumeLast: empty or unreadable file for userId ' . $userId);
             return null;
         }
 
         $data = json_decode($raw, true);
         if (!is_array($data)) {
+            error_log('BarcodeBridge consumeLast: malformed JSON for userId ' . $userId);
             return null;
         }
 
@@ -79,11 +93,14 @@ class BarcodeBridge
         $time    = (int) ($data['time'] ?? 0);
 
         if ($barcode === '' || $time <= 0) {
+            error_log('BarcodeBridge consumeLast: missing barcode or time for userId ' . $userId);
             return null;
         }
 
-        if (time() - $time > self::TTL_SECONDS) {
-            // Expired; do not return stale data
+        $ttl = self::ttl();
+        $age = time() - $time;
+        if ($age > $ttl) {
+            error_log(sprintf('BarcodeBridge consumeLast: expired barcode for userId %d (age=%d, ttl=%d)', $userId, $age, $ttl));
             return null;
         }
 
