@@ -138,6 +138,39 @@ class Sale
         return $saleId;
     }
 
+    /**
+     * إلغاء فاتورة مدفوعة وإعادة المخزون لكل منتجاتها.
+     * يُعيد false إذا كانت الفاتورة غير موجودة أو ليست بحالة 'paid'.
+     */
+    public static function cancel(int $id): bool
+    {
+        $db   = Database::getInstance();
+        $sale = self::find($id);
+
+        if (!$sale || $sale['status'] !== 'paid') {
+            return false;
+        }
+
+        $items = self::getItems($id);
+
+        $db->beginTransaction();
+        try {
+            $db->query(
+                "UPDATE sales SET status = 'cancelled' WHERE id = :id",
+                [':id' => $id]
+            );
+            foreach ($items as $item) {
+                Product::incrementStock((int) $item['product_id'], (int) $item['quantity']);
+            }
+            $db->commit();
+        } catch (\Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
+        return true;
+    }
+
     public static function monthlyTotal(): float
     {
         $db  = Database::getInstance();

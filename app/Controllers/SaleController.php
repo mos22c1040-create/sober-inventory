@@ -37,6 +37,8 @@ class SaleController extends Controller
             'todayTotal'   => $todayTotal,
             'todayCount'   => $todayCount,
             'monthlyTotal' => $monthlyTotal,
+            'csrfToken'    => Security::generateCsrfToken(),
+            'isAdmin'      => ($_SESSION['role'] ?? '') === 'admin',
         ]);
     }
 
@@ -73,6 +75,37 @@ class SaleController extends Controller
         extract(['sale' => $sale, 'items' => $items, 'appSettings' => $appSettings]);
         require BASE_PATH . '/views/sales/receipt.php';
         exit;
+    }
+
+    /** POST /api/sales/cancel */
+    public function cancel(): void
+    {
+        AuthHelper::requireRole('admin');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Method not allowed'], 405);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!Security::validateCsrfToken($input['csrf_token'] ?? '')) {
+            $this->jsonResponse(['error' => 'رمز الأمان غير صالح'], 403);
+        }
+
+        $id = (int) ($input['id'] ?? 0);
+        if ($id <= 0) {
+            $this->jsonResponse(['error' => 'معرف الفاتورة غير صالح'], 400);
+        }
+
+        try {
+            $ok = Sale::cancel($id);
+            if (!$ok) {
+                $this->jsonResponse(['error' => 'تعذر إلغاء الفاتورة — تأكد أنها مدفوعة وغير ملغاة'], 422);
+            }
+            ActivityLog::log('sale.cancel', 'sale', $id, 'تم إلغاء الفاتورة #' . $id);
+            FileCache::delete('dashboard_daily_totals_7');
+            $this->jsonResponse(['success' => true]);
+        } catch (\Exception $e) {
+            $this->jsonResponse(['error' => 'حدث خطأ أثناء الإلغاء'], 500);
+        }
     }
 
     /** POST /api/sales */

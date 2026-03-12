@@ -9,6 +9,7 @@ use App\Helpers\Security;
 use App\Models\ActivityLog;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Helpers\FileCache;
 
 class PurchaseController extends Controller
 {
@@ -17,8 +18,9 @@ class PurchaseController extends Controller
         AuthHelper::requireRole('admin');
         $purchases = Purchase::all();
         $this->view('purchases/index', [
-            'title' => 'المشتريات',
+            'title'     => 'المشتريات',
             'purchases' => $purchases,
+            'csrfToken' => Security::generateCsrfToken(),
         ]);
     }
 
@@ -67,5 +69,35 @@ class PurchaseController extends Controller
         $purchaseId = Purchase::create($userId, $validItems, $supplier);
         ActivityLog::log('purchase.create', 'purchase', $purchaseId, $supplier ?: '—');
         $this->jsonResponse(['success' => true, 'id' => $purchaseId, 'redirect' => '/purchases'], 201);
+    }
+
+    /** POST /api/purchases/delete */
+    public function delete(): void
+    {
+        AuthHelper::requireRole('admin');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Method not allowed'], 405);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!Security::validateCsrfToken($input['csrf_token'] ?? '')) {
+            $this->jsonResponse(['error' => 'Invalid CSRF token'], 403);
+        }
+
+        $id = (int) ($input['id'] ?? 0);
+        if ($id <= 0) {
+            $this->jsonResponse(['error' => 'معرف الشراء غير صالح'], 400);
+        }
+
+        try {
+            $result = Purchase::delete($id);
+            if (!$result['ok']) {
+                $this->jsonResponse(['error' => $result['error']], 422);
+            }
+            ActivityLog::log('purchase.delete', 'purchase', $id, 'حذف طلب الشراء #' . $id);
+            $this->jsonResponse(['success' => true]);
+        } catch (\Exception $e) {
+            $this->jsonResponse(['error' => 'حدث خطأ أثناء الحذف'], 500);
+        }
     }
 }

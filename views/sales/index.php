@@ -7,6 +7,8 @@ $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
 $todayTotal   = $todayTotal   ?? 0;
 $todayCount   = $todayCount   ?? 0;
 $monthlyTotal = $monthlyTotal ?? 0;
+$isAdmin      = $isAdmin ?? (($_SESSION['role'] ?? '') === 'admin');
+$csrfToken    = $csrfToken ?? '';
 ?>
 <nav class="flex items-center gap-2 text-sm mb-4" style="color: rgb(var(--muted-foreground));" aria-label="مسار التنقل">
     <a href="<?= $bp ?>/dashboard" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">لوحة التحكم</a>
@@ -94,6 +96,7 @@ $monthlyTotal = $monthlyTotal ?? 0;
                     <?php if (!empty($sales) && isset($sales[0]['discount'])): ?>
                     <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500">الخصم</th>
                     <?php endif; ?>
+                    <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500">الحالة</th>
                     <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500">الكاشير</th>
                     <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500">التاريخ والوقت</th>
                     <th class="px-5 py-3 text-center text-xs font-semibold text-gray-500">إجراءات</th>
@@ -160,6 +163,17 @@ $monthlyTotal = $monthlyTotal ?? 0;
                         <?php endif; ?>
                     </td>
                     <?php endif; ?>
+                    <td class="px-5 py-3.5 text-center">
+                        <?php if (($sale['status'] ?? 'paid') === 'cancelled'): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100">
+                            <i class="fa-solid fa-ban text-xs"></i> ملغاة
+                        </span>
+                        <?php else: ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            <i class="fa-solid fa-check text-xs"></i> مدفوعة
+                        </span>
+                        <?php endif; ?>
+                    </td>
                     <td class="px-5 py-3.5 text-center text-sm text-slate-500">
                         <?= htmlspecialchars($sale['cashier_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
                     </td>
@@ -173,11 +187,22 @@ $monthlyTotal = $monthlyTotal ?? 0;
                         </div>
                     </td>
                     <td class="px-5 py-3.5 text-center">
-                        <a href="<?= $bp ?>/sales/receipt?id=<?= (int) $sale['id'] ?>" target="_blank"
-                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors"
-                           title="طباعة الوصل">
-                            <i class="fa-solid fa-print text-xs"></i> طباعة
-                        </a>
+                        <div class="flex items-center justify-center gap-2">
+                            <a href="<?= $bp ?>/sales/receipt?id=<?= (int) $sale['id'] ?>" target="_blank"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors"
+                               title="طباعة الوصل">
+                                <i class="fa-solid fa-print text-xs"></i> طباعة
+                            </a>
+                            <?php if ($isAdmin && ($sale['status'] ?? 'paid') === 'paid'): ?>
+                            <button type="button"
+                                    class="btn-cancel-sale inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-700 border border-red-100 hover:bg-red-100 transition-colors"
+                                    data-id="<?= (int) $sale['id'] ?>"
+                                    data-invoice="<?= htmlspecialchars($sale['invoice_number'] ?? '#' . $sale['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                    title="إلغاء الفاتورة وإعادة المخزون">
+                                <i class="fa-solid fa-ban text-xs"></i> إلغاء
+                            </button>
+                            <?php endif; ?>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -274,5 +299,46 @@ $monthlyTotal = $monthlyTotal ?? 0;
     filterDate.addEventListener('change', applyFilters);
 })();
 </script>
+
+<?php if ($isAdmin): ?>
+<script>
+(function () {
+    const BASE  = (document.querySelector('meta[name="app-base"]') || {}).content || '';
+    const CSRF  = <?= json_encode($csrfToken, JSON_UNESCAPED_UNICODE) ?>;
+
+    document.querySelectorAll('.btn-cancel-sale').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const id      = btn.dataset.id;
+            const invoice = btn.dataset.invoice;
+            if (!confirm('إلغاء الفاتورة ' + invoice + '؟\nسيتم إعادة الكميات إلى المخزون.')) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i>';
+
+            fetch(BASE + '/api/sales/cancel', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ id: parseInt(id, 10), csrf_token: CSRF })
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'حدث خطأ');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-ban text-xs"></i> إلغاء';
+                }
+            })
+            .catch(function () {
+                alert('خطأ في الاتصال');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-ban text-xs"></i> إلغاء';
+            });
+        });
+    });
+})();
+</script>
+<?php endif; ?>
 
 <?php require BASE_PATH . '/views/layouts/footer.php'; ?>

@@ -120,11 +120,13 @@ $router->get('/sales', 'SaleController@index');
 $router->get('/sales/create', 'SaleController@create');
 $router->get('/sales/receipt', 'SaleController@receipt');
 $router->post('/api/sales', 'SaleController@store');
+$router->post('/api/sales/cancel', 'SaleController@cancel');
 
 // Purchases
 $router->get('/purchases', 'PurchaseController@index');
 $router->get('/purchases/create', 'PurchaseController@create');
 $router->post('/api/purchases', 'PurchaseController@store');
+$router->post('/api/purchases/delete', 'PurchaseController@delete');
 
 // Expenses
 $router->get('/expenses', 'ExpenseController@index');

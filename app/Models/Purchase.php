@@ -35,6 +35,53 @@ class Purchase
         return $stmt->fetchAll();
     }
 
+    /**
+     * حذف طلب شراء وعكس تأثيره على المخزون.
+     * يُعيد ['ok' => false, 'error' => '...'] إذا كانت الكمية الحالية
+     * لأي منتج أقل من كمية الشراء (يمنع المخزون السالب).
+     *
+     * @return array{ok: bool, error?: string}
+     */
+    public static function delete(int $id): array
+    {
+        $db       = Database::getInstance();
+        $purchase = self::find($id);
+
+        if (!$purchase) {
+            return ['ok' => false, 'error' => 'طلب الشراء غير موجود'];
+        }
+
+        $items = self::getItems($id);
+
+        foreach ($items as $item) {
+            $product = Product::find((int) $item['product_id']);
+            if (!$product) {
+                continue;
+            }
+            if ((int) $product['quantity'] < (int) $item['quantity']) {
+                return [
+                    'ok'    => false,
+                    'error' => "الكمية الحالية لـ \"{$product['name']}\" ({$product['quantity']}) أقل من كمية الشراء ({$item['quantity']}). حذف هذه العملية سيسبب مخزوناً سالباً.",
+                ];
+            }
+        }
+
+        $db->beginTransaction();
+        try {
+            foreach ($items as $item) {
+                Product::decrementStock((int) $item['product_id'], (int) $item['quantity']);
+            }
+            $db->query("DELETE FROM purchase_items WHERE purchase_id = :id", [':id' => $id]);
+            $db->query("DELETE FROM purchases WHERE id = :id", [':id' => $id]);
+            $db->commit();
+        } catch (\Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
+        return ['ok' => true];
+    }
+
     public static function create(int $userId, array $items, string $supplier = ''): int
     {
         $db    = Database::getInstance();
