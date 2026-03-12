@@ -1,9 +1,9 @@
 <?php require BASE_PATH . '/views/layouts/header.php'; ?>
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
-<?php $isAdmin = ($_SESSION['role'] ?? '') === 'admin'; ?>
+<?php $bp = $basePathSafe ?? ''; $isAdmin = ($_SESSION['role'] ?? '') === 'admin'; ?>
 
 <nav class="flex items-center gap-2 text-sm mb-4" style="color: rgb(var(--muted-foreground));" aria-label="مسار التنقل">
-    <a href="/dashboard" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">لوحة التحكم</a>
+    <a href="<?= $bp ?>/dashboard" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">لوحة التحكم</a>
     <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
     <span class="font-medium" style="color: rgb(var(--foreground));">التصنيفات</span>
 </nav>
@@ -14,7 +14,7 @@
         <p class="page-subtitle">تنظيم المنتجات حسب التصنيف</p>
     </header>
     <?php if ($isAdmin): ?>
-    <a href="/categories/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium btn-primary focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors duration-200" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
+    <a href="<?= $bp ?>/categories/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium btn-primary focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors duration-200" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
         <i class="fa-solid fa-plus ms-2" aria-hidden="true"></i> إضافة تصنيف
     </a>
     <?php endif; ?>
@@ -37,7 +37,7 @@
                     <div class="empty-state">
                         <div class="empty-state-icon mx-auto"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></div>
                         <p class="font-medium">لا توجد تصنيفات بعد.</p>
-                        <?php if ($isAdmin): ?><a href="/categories/create" class="inline-flex items-center gap-2 mt-3 text-sm font-bold" style="color: rgb(var(--primary));"><i class="fa-solid fa-plus" aria-hidden="true"></i> إضافة تصنيف</a><?php endif; ?>
+                        <?php if ($isAdmin): ?><a href="<?= $bp ?>/categories/create" class="inline-flex items-center gap-2 mt-3 text-sm font-bold" style="color: rgb(var(--primary));"><i class="fa-solid fa-plus" aria-hidden="true"></i> إضافة تصنيف</a><?php endif; ?>
                     </div>
                 </td></tr>
                 <?php else: ?>
@@ -48,7 +48,7 @@
                     <td class="px-6 py-4 text-sm" style="color: rgb(var(--muted-foreground));"><?= htmlspecialchars($c['description'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                     <?php if ($isAdmin): ?>
                     <td class="px-6 py-4 text-center">
-                        <a href="/categories/edit?id=<?= (int)$c['id'] ?>" class="text-sm font-medium ms-3" style="color: rgb(var(--primary));">تعديل</a>
+                        <a href="<?= $bp ?>/categories/edit?id=<?= (int)$c['id'] ?>" class="text-sm font-medium ms-3" style="color: rgb(var(--primary));">تعديل</a>
                         <button type="button" onclick="deleteCategory(<?= (int)$c['id'] ?>, '<?= htmlspecialchars(addslashes($c['name']), ENT_QUOTES, 'UTF-8') ?>')" class="text-sm font-medium cursor-pointer" style="color: rgb(var(--color-danger));">حذف</button>
                     </td>
                     <?php endif; ?>
@@ -64,7 +64,7 @@
 const csrfToken = '<?= htmlspecialchars($csrfToken ?? $_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>';
 function deleteCategory(id, name) {
     if (!confirm('حذف التصنيف «' + name + '»؟')) return;
-    fetch('/api/categories/delete', {
+    fetch((window.APP_BASE || '') + '/api/categories/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: id, csrf_token: csrfToken })

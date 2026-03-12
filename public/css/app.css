@@ -251,6 +251,11 @@ button:disabled, [aria-disabled="true"] {
     -webkit-backdrop-filter: blur(12px);
 }
 
+/* ─── Sidebar ─────────────────────────────────────────────────────────── */
+.sidebar-border-color {
+    border-color: rgb(var(--sidebar-border));
+}
+
 /* ─── Sidebar active state ───────────────────────────────────────────── */
 .sidebar-link-active {
     background: rgb(var(--primary));

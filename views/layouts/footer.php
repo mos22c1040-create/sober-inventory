@@ -1,6 +1,9 @@
         </main>
     </div> <!-- End Main Content Wrapper -->
     <script>
+    window.APP_BASE = <?= json_encode($basePath ?? (rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\') ?: '/'), JSON_UNESCAPED_UNICODE) ?>;
+    </script>
+    <script>
     (function() {
         var btn = document.getElementById('sidebar-toggle');
         var backdrop = document.getElementById('sidebar-backdrop');

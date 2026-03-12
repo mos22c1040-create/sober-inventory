@@ -6,8 +6,9 @@ $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
 $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 ?>
 
+<?php $bp = $basePathSafe ?? ''; ?>
 <nav class="flex items-center gap-2 text-sm mb-4" style="color: rgb(var(--muted-foreground));" aria-label="مسار التنقل">
-    <a href="/dashboard" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">لوحة التحكم</a>
+    <a href="<?= $bp ?>/dashboard" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">لوحة التحكم</a>
     <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
     <span class="font-medium" style="color: rgb(var(--foreground));">المنتجات</span>
 </nav>
@@ -30,11 +31,11 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
         <button type="button" id="camera-scan-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 touch-manipulation cursor-pointer border" style="background: rgb(var(--muted)); color: rgb(var(--foreground)); border-color: rgb(var(--border));" title="مسح الباركود من كاميرا الجوال">
             <i class="fa-solid fa-camera" aria-hidden="true"></i> مسح بالكاميرا <span class="text-xs hidden sm:inline" style="color: rgb(var(--muted-foreground));">(من الجوال)</span>
         </button>
-        <a href="/barcode-scan" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 border cursor-pointer" style="background: rgb(var(--muted)); color: rgb(var(--primary)); border-color: rgb(var(--border));" title="افتح على الجوال (ربط بالكابل/شبكة) وامسح — الرمز يظهر هنا">
+        <a href="<?= $bp ?>/barcode-scan" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 border cursor-pointer" style="background: rgb(var(--muted)); color: rgb(var(--primary)); border-color: rgb(var(--border));" title="افتح على الجوال (ربط بالكابل/شبكة) وامسح — الرمز يظهر هنا">
             <i class="fa-solid fa-mobile-screen" aria-hidden="true"></i> جوال → حاسوب
         </a>
         <?php if ($isAdmin): ?>
-        <a href="/products/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium btn-primary focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors duration-200" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
+        <a href="<?= $bp ?>/products/create" class="inline-flex items-center min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium btn-primary focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors duration-200" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
             <i class="fa-solid fa-plus ms-2" aria-hidden="true"></i> إضافة منتج
         </a>
         <?php endif; ?>
@@ -62,7 +63,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
                     <div class="empty-state">
                         <div class="empty-state-icon mx-auto"><i class="fa-solid fa-box-open"></i></div>
                         <p class="font-medium text-slate-600">لا توجد منتجات بعد</p>
-                        <?php if ($isAdmin): ?><a href="/products/create" class="inline-flex items-center gap-2 mt-3 text-sm font-bold text-blue-600 hover:text-blue-700"><i class="fa-solid fa-plus"></i> إضافة منتج</a><?php endif; ?>
+                        <?php if ($isAdmin): ?><a href="<?= $bp ?>/products/create" class="inline-flex items-center gap-2 mt-3 text-sm font-bold text-blue-600 hover:text-blue-700"><i class="fa-solid fa-plus"></i> إضافة منتج</a><?php endif; ?>
                     </div>
                 </td></tr>
                 <?php else: ?>
@@ -81,7 +82,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
                     </td>
                     <?php if ($isAdmin): ?>
                     <td class="px-6 py-4 text-center">
-                        <a href="/products/edit?id=<?= (int)$p['id'] ?>" class="text-blue-600 hover:text-blue-800 text-sm font-medium ms-3">تعديل</a>
+                        <a href="<?= $bp ?>/products/edit?id=<?= (int)$p['id'] ?>" class="text-blue-600 hover:text-blue-800 text-sm font-medium ms-3">تعديل</a>
                         <button type="button" onclick="deleteProduct(<?= (int)$p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name']), ENT_QUOTES, 'UTF-8') ?>')" class="text-red-600 hover:text-red-800 text-sm font-medium">حذف</button>
                     </td>
                     <?php endif; ?>
@@ -138,10 +139,11 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 </div>
 
 <script>
-const csrfToken = '<?= htmlspecialchars($csrfToken ?? $_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>';
+var APP_BASE = window.APP_BASE || '';
+var csrfToken = '<?= htmlspecialchars($csrfToken ?? $_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>';
 function deleteProduct(id, name) {
     if (!confirm('هل أنت متأكد من حذف المنتج "' + name + '"?\nلا يمكن التراجع عن هذه العملية.')) return;
-    fetch('/api/products/delete', {
+    fetch(APP_BASE + '/api/products/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: id, csrf_token: csrfToken })
@@ -171,7 +173,7 @@ function deleteProduct(id, name) {
     function doBarcodeSearch(skuFromBridge) {
         var sku = (typeof skuFromBridge === 'string' ? skuFromBridge : (barcodeInput && barcodeInput.value || '')).trim();
         if (!sku) return;
-        fetch('/api/products/barcode?sku=' + encodeURIComponent(sku)).then(function(r) { return r.json(); }).then(function(data) {
+        fetch(APP_BASE + '/api/products/barcode?sku=' + encodeURIComponent(sku)).then(function(r) { return r.json(); }).then(function(data) {
             if (data.success && data.product) {
                 var p = data.product;
                 showBarcodeResult(true, 'تم العثور على: ' + (p.name || '') + ' — الرمز: ' + (p.sku || '') + (skuFromBridge ? ' (من الجوال)' : ''), p.id);
@@ -183,7 +185,7 @@ function deleteProduct(id, name) {
     if (barcodeBtn) barcodeBtn.addEventListener('click', function() { doBarcodeSearch(); });
     var _lastBridgeSku = null;
     setInterval(function() {
-        fetch('/api/barcode-last').then(function(r) { return r.json(); }).then(function(data) {
+        fetch(APP_BASE + '/api/barcode-last').then(function(r) { return r.json(); }).then(function(data) {
             if (data && data.barcode && data.barcode !== _lastBridgeSku) {
                 _lastBridgeSku = data.barcode;
                 doBarcodeSearch(data.barcode);

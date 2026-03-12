@@ -1,9 +1,17 @@
+<?php
+if (!isset($basePath)) {
+    $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
+    $basePath = $basePath === '' || $basePath === '\\' ? '/' : $basePath;
+}
+$basePathSafe = htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8');
+?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta name="app-base" content="<?= $basePathSafe ?>">
+    <link rel="icon" type="image/svg+xml" href="<?= $basePathSafe ?>/favicon.svg">
     <title><?= htmlspecialchars($title ?? 'نظام المخزون') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -16,7 +24,7 @@
             }
         };
     </script>
-    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="<?= $basePathSafe ?>/css/app.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <?php if (!empty($loadChartJs)): ?>

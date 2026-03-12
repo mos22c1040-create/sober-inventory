@@ -65,7 +65,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
                 <i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i>
             </div>
         </div>
-        <a href="/products" class="mt-4 inline-flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700">
+        <a href="<?= $basePathSafe ?? '' ?>/products" class="mt-4 inline-flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700">
             إعادة تخزين <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i>
         </a>
     </div>
@@ -151,7 +151,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
         <div class="absolute -right-8 -top-8 w-28 h-28 bg-slate-100 rounded-full opacity-60"></div>
         <div class="flex justify-between items-center mb-5 relative z-10">
             <h3 class="text-lg font-bold text-slate-800">آخر المبيعات</h3>
-            <a href="<?= $isAdmin ? '/reports' : '/sales' ?>" class="touch-target flex items-center justify-center text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer" aria-label="<?= $isAdmin ? 'التقارير' : 'المبيعات' ?>">
+            <a href="<?= ($basePathSafe ?? '') . ($isAdmin ? '/reports' : '/sales') ?>" class="touch-target flex items-center justify-center text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer" aria-label="<?= $isAdmin ? 'التقارير' : 'المبيعات' ?>">
                 <i class="fa-solid fa-<?= $isAdmin ? 'chart-pie' : 'list' ?> text-sm"></i>
             </a>
         </div>
@@ -163,7 +163,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
             <div class="empty-state py-8">
                 <div class="empty-state-icon"><i class="fa-solid fa-receipt"></i></div>
                 <p class="text-sm font-medium">لا توجد مبيعات حديثة</p>
-                <a href="/sales/create" class="inline-block mt-3 text-sm font-bold text-blue-600 hover:text-blue-700">إنشاء فاتورة</a>
+                <a href="<?= $basePathSafe ?? '' ?>/sales/create" class="inline-block mt-3 text-sm font-bold text-blue-600 hover:text-blue-700">إنشاء فاتورة</a>
             </div>
             <?php else: ?>
             <?php foreach ($recentSales as $sale): 
@@ -189,7 +189,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
             <?php endif; ?>
         </div>
         
-        <a href="<?= $isAdmin ? '/reports' : '/sales' ?>" class="mt-4 block w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-blue-600 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all text-center cursor-pointer">
+        <a href="<?= ($basePathSafe ?? '') . ($isAdmin ? '/reports' : '/sales') ?>" class="mt-4 block w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-blue-600 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all text-center cursor-pointer">
             <i class="fa-solid fa-list text-xs"></i> عرض كل المبيعات
         </a>
     </div>

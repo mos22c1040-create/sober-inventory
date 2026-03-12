@@ -1,28 +1,34 @@
 <?php require BASE_PATH . '/views/layouts/header.php'; ?>
 <?php require BASE_PATH . '/views/layouts/sidebar.php'; ?>
-<?php $appSettings = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : []; $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع'; ?>
-
-<nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
-    <a href="/dashboard" class="hover:text-blue-600 transition-colors">لوحة التحكم</a>
-    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
-    <a href="/products" class="hover:text-blue-600 transition-colors">المنتجات</a>
-    <i class="fa-solid fa-chevron-left text-xs text-gray-400"></i>
-    <span class="text-slate-700 font-medium"><?= $product ? 'تعديل منتج' : 'إضافة منتج' ?></span>
+<?php
+$appSettings    = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : [];
+$currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
+$bp             = $basePathSafe ?? '';
+?>
+<nav class="flex items-center gap-2 text-sm mb-4" style="color: rgb(var(--muted-foreground));" aria-label="مسار التنقل">
+    <a href="<?= $bp ?>/dashboard" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">لوحة التحكم</a>
+    <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
+    <a href="<?= $bp ?>/products" class="hover:opacity-80 transition-colors" style="color: rgb(var(--accent));">المنتجات</a>
+    <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
+    <span class="font-medium" style="color: rgb(var(--foreground));"><?= $product ? 'تعديل منتج' : 'إضافة منتج' ?></span>
 </nav>
 
 <div class="max-w-2xl">
-    <h1 class="text-2xl font-bold text-slate-800 mb-6"><?= $product ? 'تعديل المنتج' : 'إضافة منتج' ?></h1>
-    <form id="product-form" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+    <header class="page-header mb-6">
+        <h1 class="page-title"><?= $product ? 'تعديل المنتج' : 'إضافة منتج' ?></h1>
+        <p class="page-subtitle"><?= $product ? 'تحديث بيانات المنتج' : 'إضافة منتج جديد إلى الكتالوج' ?></p>
+    </header>
+    <form id="product-form" class="app-card-flat p-6 space-y-4">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
         <?php if ($product): ?><input type="hidden" name="id" value="<?= (int)$product['id'] ?>"><?php endif; ?>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">الاسم *</label>
-            <input type="text" name="name" required value="<?= htmlspecialchars($product['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">الاسم *</label>
+            <input type="text" name="name" required value="<?= htmlspecialchars($product['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" class="app-input w-full rounded-lg px-4 py-2.5 border text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">التصنيف</label>
-            <select name="category_id" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">التصنيف</label>
+            <select name="category_id" class="app-input w-full rounded-lg px-4 py-2.5 border text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
                 <option value="">— لا يوجد —</option>
                 <?php foreach ($categories as $c): ?>
                 <option value="<?= (int)$c['id'] ?>" <?= (isset($product['category_id']) && (int)$product['category_id'] === (int)$c['id']) ? 'selected' : '' ?>><?= htmlspecialchars($c['name'], ENT_QUOTES, 'UTF-8') ?></option>
@@ -30,13 +36,13 @@
             </select>
         </div>
         <!-- الباركود: مسح مباشر بكاميرا الجوال أو قارئ USB أو يدوي -->
-        <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">الباركود (SKU)</label>
+        <div class="rounded-xl p-4" style="border: 1px solid rgb(var(--border)); background: rgb(var(--muted));">
+            <label class="block text-sm font-semibold mb-2" style="color: rgb(var(--foreground));">الباركود (SKU)</label>
             <div class="flex gap-2">
                 <input type="text" id="product-sku" name="sku"
                     placeholder="سيُملأ تلقائياً عند المسح أو اكتب يدوياً"
                     value="<?= htmlspecialchars($product['sku'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                    class="flex-1 rounded-lg border-gray-300 px-4 py-2.5 border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                    class="app-input flex-1 rounded-lg px-4 py-2.5 border text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--color-surface-elevated));">
                 <button type="button" id="btn-camera-scan"
                     class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 active:scale-95 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all shrink-0">
                     <i class="fa-solid fa-camera text-base"></i>
@@ -66,41 +72,39 @@
         </div>
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">السعر (<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?>)</label>
-                <input type="number" name="price" step="0.01" min="0" value="<?= htmlspecialchars($product['price'] ?? '0', ENT_QUOTES, 'UTF-8') ?>" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500">
+                <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">السعر (<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?>)</label>
+                <input type="number" name="price" step="0.01" min="0" value="<?= htmlspecialchars($product['price'] ?? '0', ENT_QUOTES, 'UTF-8') ?>" class="app-input w-full rounded-lg px-4 py-2.5 border text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">التكلفة (<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?>)</label>
-                <input type="number" name="cost" step="0.01" min="0" value="<?= htmlspecialchars($product['cost'] ?? '0', ENT_QUOTES, 'UTF-8') ?>" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500">
+                <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">التكلفة (<?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?>)</label>
+                <input type="number" name="cost" step="0.01" min="0" value="<?= htmlspecialchars($product['cost'] ?? '0', ENT_QUOTES, 'UTF-8') ?>" class="app-input w-full rounded-lg px-4 py-2.5 border text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
             </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">الكمية</label>
-                <input type="number" name="quantity" min="0" value="<?= htmlspecialchars($product['quantity'] ?? '0', ENT_QUOTES, 'UTF-8') ?>" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500">
+                <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">الكمية</label>
+                <input type="number" name="quantity" min="0" value="<?= htmlspecialchars($product['quantity'] ?? '0', ENT_QUOTES, 'UTF-8') ?>" class="app-input w-full rounded-lg px-4 py-2.5 border text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">تنبيه نقص المخزون عند</label>
-                <input type="number" name="low_stock_threshold" min="0" value="<?= htmlspecialchars($product['low_stock_threshold'] ?? '5', ENT_QUOTES, 'UTF-8') ?>" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500">
+                <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">تنبيه نقص المخزون عند</label>
+                <input type="number" name="low_stock_threshold" min="0" value="<?= htmlspecialchars($product['low_stock_threshold'] ?? '5', ENT_QUOTES, 'UTF-8') ?>" class="app-input w-full rounded-lg px-4 py-2.5 border text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
             </div>
         </div>
-        <!-- وحدة القياس -->
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">وحدة القياس</label>
-            <select name="unit" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">وحدة القياس</label>
+            <select name="unit" class="app-input w-full rounded-lg px-4 py-2.5 border text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
                 <?php foreach (['قطعة','كيلو','جرام','لتر','مل','علبة','كرتون','صندوق','زجاجة','كيس','متر','طن'] as $u): ?>
                 <option value="<?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>" <?= ($product['unit'] ?? 'قطعة') === $u ? 'selected' : '' ?>><?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
-        <!-- وصف المنتج -->
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">وصف المنتج (اختياري)</label>
-            <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300 px-4 py-2 border focus:ring-2 focus:ring-blue-500 resize-none" placeholder="تفاصيل إضافية عن المنتج..."><?= htmlspecialchars($product['description'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+            <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">وصف المنتج (اختياري)</label>
+            <textarea name="description" rows="3" class="app-input w-full rounded-lg px-4 py-2.5 border text-sm resize-none" style="border-color: rgb(var(--border)); background: rgb(var(--muted));" placeholder="تفاصيل إضافية عن المنتج..."><?= htmlspecialchars($product['description'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
         </div>
         <div class="flex gap-3 pt-4">
             <button type="submit" id="submit-btn" class="min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-semibold btn-primary focus:ring-2 focus:ring-offset-2 transition-colors duration-200 cursor-pointer" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));"><?= $product ? 'حفظ التعديلات' : 'إضافة المنتج' ?></button>
-            <a href="/products" class="min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium border flex items-center transition-colors duration-200 cursor-pointer" style="border-color: rgb(var(--border)); color: rgb(var(--foreground));">إلغاء</a>
+            <a href="<?= $bp ?>/products" class="min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium border flex items-center transition-colors duration-200 cursor-pointer" style="border-color: rgb(var(--border)); color: rgb(var(--foreground));">إلغاء</a>
         </div>
     </form>
 </div>
@@ -217,10 +221,14 @@
         body.category_id = body.category_id || null;
         body.unit = body.unit || 'قطعة';
         body.description = body.description || null;
-        var url = body.id ? '/api/products/update' : '/api/products';
+        var base = window.APP_BASE || '';
+        var url = body.id ? base + '/api/products/update' : base + '/api/products';
         var res  = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         var json = await res.json();
-        if (json.success && json.redirect) window.location.href = json.redirect;
+        if (json.success && json.redirect) {
+            var base = (window.APP_BASE || '').replace(/\/$/, '');
+            window.location.href = base + (json.redirect || '/products');
+        }
         else alert(json.error || 'حدث خطأ أثناء الحفظ');
     };
 })();

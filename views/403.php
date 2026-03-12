@@ -1,12 +1,17 @@
+<?php
+$basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
+$basePath = $basePath === '' || $basePath === '\\' ? '/' : $basePath;
+$bp = htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8');
+?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="<?= $bp ?>/favicon.svg">
     <title>لا توجد صلاحية — 403</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="<?= $bp ?>/css/app.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style> body { font-family: 'Tajawal', sans-serif; } </style>
@@ -20,7 +25,7 @@
             </div>
             <h1 class="text-xl font-bold mb-2" style="color: rgb(var(--foreground));">لا توجد صلاحية</h1>
             <p class="text-sm mb-8 max-w-sm mx-auto" style="color: rgb(var(--muted-foreground));">ليس لديك صلاحية الوصول إلى هذه الصفحة. تواصل مع المدير إذا كنت تحتاجها.</p>
-            <a href="/dashboard" class="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 rounded-lg font-bold text-sm focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors duration-200" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
+            <a href="<?= $bp ?>/dashboard" class="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 rounded-lg font-bold text-sm focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors duration-200" style="background: rgb(var(--primary)); color: rgb(var(--primary-foreground));">
                 <i class="fa-solid fa-house"></i> العودة للوحة التحكم
             </a>
         </div>
