@@ -4,6 +4,8 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
+import 'dio_stub.dart' if (dart.library.html) 'dio_web.dart' as dio_web;
+
 /// عميل API مع حفظ الكوكيز (جلسة PHP بعد /api/login) — ضروري للـ APK وطلبات GET مثل /api/products
 class ApiClient {
   final Dio _dio;
@@ -23,7 +25,9 @@ class ApiClient {
       ),
     );
 
-    if (!kIsWeb) {
+    if (kIsWeb) {
+      dio_web.attachWebCredentials(dio);
+    } else {
       final dir = await getApplicationSupportDirectory();
       final jar = PersistCookieJar(
         storage: FileStorage('${dir.path}/.cookies/'),

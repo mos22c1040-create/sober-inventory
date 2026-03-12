@@ -233,7 +233,13 @@ class AuthHelper
         // طلبات API (موبايل / Flutter Web): لا نعيد توجيه HTML — يكسر CORS و XMLHttpRequest
         if (strpos($path, '/api/') === 0) {
             if (!headers_sent()) {
-                header('Access-Control-Allow-Origin: *');
+                $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+                if ($origin !== '' && preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#i', $origin)) {
+                    header('Access-Control-Allow-Origin: ' . $origin);
+                    header('Access-Control-Allow-Credentials: true');
+                } else {
+                    header('Access-Control-Allow-Origin: *');
+                }
                 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
                 header('Access-Control-Allow-Headers: Content-Type, Accept');
                 header('Content-Type: application/json; charset=UTF-8');

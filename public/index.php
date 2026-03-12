@@ -186,13 +186,23 @@ if ($uri === '' || $uri === false) {
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// CORS: allow Flutter web (localhost) and mobile app to call API
+// CORS: Web يحتاج Origin محدد + Credentials حتى يُرسل كوكي الجلسة بعد /api/login
 $isApi = (strpos($uri, '/api/') === 0);
 if ($isApi && !headers_sent()) {
-    header('Access-Control-Allow-Origin: *');
+    $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+    $allowCredentials = false;
+    if ($origin !== '' && preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#i', $origin)) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+        $allowCredentials = true;
+    } else {
+        header('Access-Control-Allow-Origin: *');
+    }
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Accept');
     header('Access-Control-Max-Age: 86400');
+    if ($allowCredentials) {
+        header('Access-Control-Allow-Credentials: true');
+    }
 }
 if ($method === 'OPTIONS') {
     http_response_code(204);
