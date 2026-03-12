@@ -8,14 +8,41 @@ use App\Core\Database;
 
 class Product
 {
-    public static function all(bool $withCategory = true): array
+    /**
+     * Get all products, optionally with category join and pagination.
+     *
+     * @param  bool     $withCategory Join categories table or not.
+     * @param  int|null $limit        Optional limit (for small lists/exports).
+     * @param  int      $offset       Optional offset (used when $limit is not null).
+     * @return array
+     */
+    public static function all(bool $withCategory = true, ?int $limit = null, int $offset = 0): array
     {
         $db = Database::getInstance();
-        $sql = "SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.name ASC";
-        if (!$withCategory) {
-            $sql = "SELECT * FROM products ORDER BY name ASC";
+
+        if ($withCategory) {
+            $sql = "SELECT p.*, c.name AS category_name
+                      FROM products p
+                 LEFT JOIN categories c ON p.category_id = c.id
+                  ORDER BY p.name ASC";
+        } else {
+            $sql = "SELECT *
+                      FROM products
+                  ORDER BY name ASC";
         }
+
+        if ($limit !== null) {
+            $limit  = max(1, $limit);
+            $offset = max(0, $offset);
+
+            $limitInt  = (int) $limit;
+            $offsetInt = (int) $offset;
+
+            $sql .= " LIMIT {$limitInt} OFFSET {$offsetInt}";
+        }
+
         $stmt = $db->query($sql);
+
         return $stmt->fetchAll();
     }
 
@@ -38,12 +65,15 @@ class Product
         $offset  = ($page - 1) * $perPage;
         $total   = self::count();
 
+        $perPageInt = (int) $perPage;
+        $offsetInt  = (int) $offset;
+
         $stmt = Database::getInstance()->query(
             "SELECT p.*, c.name AS category_name
                FROM products p
-               LEFT JOIN categories c ON p.category_id = c.id
+          LEFT JOIN categories c ON p.category_id = c.id
               ORDER BY p.name ASC
-              LIMIT {$perPage} OFFSET {$offset}"
+              LIMIT {$perPageInt} OFFSET {$offsetInt}"
         );
 
         return [
@@ -162,6 +192,7 @@ class Product
     {
         $db     = Database::getInstance();
         $limit  = max(1, min(1000, $limit));
+        $limitInt = (int) $limit;
 
         if ($search !== '') {
             $like  = '%' . $search . '%';
@@ -170,7 +201,7 @@ class Product
                    FROM products
                   WHERE name LIKE :like OR sku LIKE :like2
                   ORDER BY name ASC
-                  LIMIT " . $limit,
+                  LIMIT {$limitInt}",
                 [':like' => $like, ':like2' => $like]
             );
         } else {
@@ -178,7 +209,7 @@ class Product
                 "SELECT id, name, sku, price, quantity, low_stock_threshold
                    FROM products
                   ORDER BY name ASC
-                  LIMIT " . $limit
+                  LIMIT {$limitInt}"
             );
         }
 
@@ -193,11 +224,14 @@ class Product
             return [];
         }
         $db = Database::getInstance();
+        $limit = max(1, min(100, $limit));
+        $limitInt = (int) $limit;
+
         $like = '%' . $q . '%';
         $stmt = $db->query(
             "SELECT p.id, p.name, p.sku, p.price, p.quantity FROM products p
               WHERE (p.name LIKE :like OR p.sku LIKE :like2) AND p.quantity > 0
-              ORDER BY p.name ASC LIMIT " . (int) $limit,
+              ORDER BY p.name ASC LIMIT {$limitInt}",
             [':like' => $like, ':like2' => $like]
         );
         return $stmt->fetchAll();

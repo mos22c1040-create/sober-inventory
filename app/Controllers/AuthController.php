@@ -78,61 +78,24 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * Core login logic.
+     *
+     * @param  callable $sendError function (string $message, int $code): void
+     */
     private function loginHandler(callable $sendError): void
     {
-        // --- Method guard -------------------------------------------------------
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $sendError('طريقة الطلب غير مسموح بها.', 405);
+        $validated = $this->validateLoginRequest($sendError);
+        if ($validated === null) {
+            // validateLoginRequest already sent the appropriate JSON error
             return;
         }
 
-        // --- Parse JSON body ----------------------------------------------------
-        $raw   = file_get_contents('php://input');
-        $input = json_decode($raw, true);
-
-        if (!is_array($input)) {
-            $sendError('جسم الطلب غير صالح (يُتوقع JSON).', 400);
-            return;
-        }
-
-        // --- Extract & type-cast fields ----------------------------------------
-        $email     = trim((string) ($input['email']      ?? ''));
-        $password  =       (string) ($input['password']   ?? '');
-        $csrfToken =       (string) ($input['csrf_token'] ?? '');
-
-        // --- CSRF validation ----------------------------------------------------
-        // ملاحظة: تم تعطيل فحص CSRF في مسار /api/login لتفادي مشاكل الجلسات
-        // على منصات الاستضافة (Railway + Supabase pooler). بقية الطلبات
-        // الحساسة يمكن أن تستخدم CSRF إذا لزم الأمر.
-
-        // --- Input presence check -----------------------------------------------
-        if ($email === '' || $password === '') {
-            $sendError('البريد الإلكتروني وكلمة المرور مطلوبان.', 400);
-            return;
-        }
-
-        // --- Rate limiting (5 attempts per 15 minutes per IP) -------------------
-        $ip       = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $ip       = trim(explode(',', (string) $ip)[0]);         // handle proxy chains
-        $rlKey    = 'login_' . $ip;
-        if (!RateLimiter::attempt($rlKey, 5, 900)) {
-            $wait = RateLimiter::retryAfter($rlKey, 900);
-            $min  = (int) ceil($wait / 60);
-            $sendError('تجاوزت الحد المسموح به. حاول مجدداً بعد ' . $min . ' دقيقة.', 429);
-            return;
-        }
-
-        // --- Email format validation --------------------------------------------
-        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $sendError('صيغة البريد الإلكتروني غير صحيحة.', 400);
-            return;
-        }
-
-        // Sanitise the email (display-safe; password must NOT be sanitised before verify)
-        $email = Security::sanitizeString($email);
+        $email          = $validated['email'];
+        $password       = $validated['password'];
+        $rateLimiterKey = $validated['rateLimiterKey'];
 
         try {
-            // --- Fetch user via Prepared Statement (SQL-injection safe) -------------
             $db   = Database::getInstance();
             $stmt = $db->query(
                 'SELECT id, username, email, password, role, status
@@ -145,25 +108,21 @@ class AuthController extends Controller
             /** @var array<string,mixed>|false $user */
             $user = $stmt->fetch();
 
-            // --- Verify password with bcrypt (constant-time, timing-attack-safe) ---
             $storedHash = trim((string) ($user['password'] ?? ''));
             if ($user === false || $storedHash === '' || !Security::verifyPassword($password, $storedHash)) {
                 $sendError('البريد الإلكتروني أو كلمة المرور غير صحيحة.', 401);
                 return;
             }
 
-            // --- Account status check -----------------------------------------------
             if ($user['status'] !== 'active') {
                 $sendError('حسابك موقوف حالياً. تواصل مع المدير.', 403);
                 return;
             }
 
-            // --- Build secure session -----------------------------------------------
             // session_regenerate_id(true) can fail with PgBouncer/pooler session handlers
             try {
                 session_regenerate_id(true);
             } catch (\Throwable $e) {
-                // If regeneration fails (e.g. DB session + pooler), start fresh manually
                 $oldData = $_SESSION;
                 session_destroy();
                 session_start();
@@ -180,8 +139,7 @@ class AuthController extends Controller
             unset($_SESSION['csrf_token']);
             Security::generateCsrfToken();
 
-            // Clear rate-limit counter on successful login
-            RateLimiter::clear($rlKey);
+            RateLimiter::clear($rateLimiterKey);
 
             ActivityLog::log('login');
 
@@ -200,6 +158,84 @@ class AuthController extends Controller
                 : 'خطأ في الخادم. حاول مرة أخرى لاحقاً.';
             $sendError($msg, 500);
         }
+    }
+
+    /**
+     * Validate and normalise login request input.
+     *
+     * Centralises:
+     * - Method guard (POST only)
+     * - JSON parsing
+     * - Presence checks
+     * - IP / rate-limiting key derivation
+     * - E-mail format validation + sanitisation
+     *
+     * NOTE: CSRF check remains optional for /api/login and is currently disabled
+     * for compatibility with some hosting setups. Can be re-enabled via env flag.
+     *
+     * @param  callable $sendError function (string $message, int $code): void
+     * @return array{
+     *     email: string,
+     *     password: string,
+     *     rateLimiterKey: string
+     * }|null
+     */
+    private function validateLoginRequest(callable $sendError): ?array
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $sendError('طريقة الطلب غير مسموح بها.', 405);
+            return null;
+        }
+
+        $raw   = file_get_contents('php://input');
+        $input = json_decode($raw, true);
+
+        if (!is_array($input)) {
+            $sendError('جسم الطلب غير صالح (يُتوقع JSON).', 400);
+            return null;
+        }
+
+        $email    = trim((string) ($input['email'] ?? ''));
+        $password = (string) ($input['password'] ?? '');
+
+        if ($email === '' || $password === '') {
+            $sendError('البريد الإلكتروني وكلمة المرور مطلوبان.', 400);
+            return null;
+        }
+
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip = trim(explode(',', (string) $ip)[0]);
+
+        $rlKey = 'login_' . $ip;
+        if (!RateLimiter::attempt($rlKey, 5, 900)) {
+            $wait = RateLimiter::retryAfter($rlKey, 900);
+            $min  = (int) ceil($wait / 60);
+            $sendError('تجاوزت الحد المسموح به. حاول مجدداً بعد ' . $min . ' دقيقة.', 429);
+            return null;
+        }
+
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $sendError('صيغة البريد الإلكتروني غير صحيحة.', 400);
+            return null;
+        }
+
+        $email = Security::sanitizeString($email);
+
+        // Optional CSRF for /api/login (disabled by default for hosting compatibility)
+        $csrfRequired = (($_ENV['LOGIN_CSRF_REQUIRED'] ?? getenv('LOGIN_CSRF_REQUIRED') ?: 'false') === 'true');
+        if ($csrfRequired) {
+            $csrfToken = (string) ($input['csrf_token'] ?? '');
+            if ($csrfToken === '' || !Security::validateCsrfToken($csrfToken)) {
+                $sendError('رمز CSRF غير صالح.', 403);
+                return null;
+            }
+        }
+
+        return [
+            'email'          => $email,
+            'password'       => $password,
+            'rateLimiterKey' => $rlKey,
+        ];
     }
 
 

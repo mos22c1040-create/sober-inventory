@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
 use App\Helpers\FileCache;
+use App\Helpers\BarcodeBridge;
 use App\Helpers\Security;
 use App\Models\ActivityLog;
 use App\Models\Category;
@@ -198,13 +199,7 @@ class ProductController extends Controller
         if ($userId < 1) {
             $this->jsonResponse(['error' => 'يجب تسجيل الدخول'], 401);
         }
-        $dir = BASE_PATH . '/storage/barcode_bridge';
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
-        }
-        $file = $dir . '/' . $userId . '.json';
-        $data = ['barcode' => $code, 'time' => time()];
-        if (@file_put_contents($file, json_encode($data)) === false) {
+        if (!BarcodeBridge::push($userId, $code)) {
             $this->jsonResponse(['error' => 'فشل حفظ الرمز'], 500);
         }
         $this->jsonResponse(['success' => true, 'message' => 'تم إرسال الرمز إلى الحاسوب']);
@@ -220,17 +215,11 @@ class ProductController extends Controller
         if ($userId < 1) {
             $this->jsonResponse(['barcode' => null]);
         }
-        $file = BASE_PATH . '/storage/barcode_bridge/' . $userId . '.json';
-        if (!is_file($file)) {
+        $result = BarcodeBridge::consumeLast($userId);
+        if ($result === null) {
             $this->jsonResponse(['barcode' => null]);
         }
-        $raw = @file_get_contents($file);
-        @unlink($file);
-        $data = $raw ? json_decode($raw, true) : null;
-        $barcode = isset($data['barcode']) ? trim((string) $data['barcode']) : null;
-        if ($barcode === '' || $barcode === null) {
-            $this->jsonResponse(['barcode' => null]);
-        }
-        $this->jsonResponse(['barcode' => $barcode, 'time' => (int) ($data['time'] ?? 0)]);
+        $this->jsonResponse(['barcode' => $result['barcode'], 'time' => $result['time']]);
     }
 }
+
