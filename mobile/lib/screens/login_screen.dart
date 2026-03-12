@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
@@ -39,13 +40,21 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         setState(() {
-          _error = (res['error'] ?? res['message'] ?? 'Login failed').toString();
+          _error = (res['error'] ?? res['message'] ?? 'فشل الدخول').toString();
         });
       }
+    } on DioException catch (e) {
+      String msg = 'تعذر الاتصال بالخادم';
+      final d = e.response?.data;
+      if (d is Map) {
+        msg = (d['error'] ?? d['message'] ?? msg).toString();
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        msg = 'تحقق من الإنترنت أو أن السيرفر يعمل';
+      }
+      setState(() => _error = msg);
     } catch (_) {
-      setState(() {
-        _error = 'تعذر الاتصال بالخادم';
-      });
+      setState(() => _error = 'تعذر الاتصال بالخادم');
     } finally {
       if (mounted) {
         setState(() => _loading = false);

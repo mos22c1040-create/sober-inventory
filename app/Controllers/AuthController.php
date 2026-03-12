@@ -190,8 +190,13 @@ class AuthController extends Controller
         $raw   = file_get_contents('php://input');
         $input = json_decode($raw, true);
 
+        // Flutter Web / بعض البروكسيات قد لا تمرّر JSON كما يتوقع PHP؛ ندعم $_POST كبديل
+        if (!is_array($input) && !empty($_POST)) {
+            $input = $_POST;
+        }
+
         if (!is_array($input)) {
-            $sendError('جسم الطلب غير صالح (يُتوقع JSON).', 400);
+            $sendError('جسم الطلب غير صالح (أرسل JSON: email, password).', 400);
             return null;
         }
 
@@ -219,7 +224,7 @@ class AuthController extends Controller
             return null;
         }
 
-        $email = Security::sanitizeString($email);
+        // لا نستخدم sanitizeString على الإيميل قبل الاستعلام من DB (يجب مطابقة القيمة المخزنة كما هي)
 
         // Optional CSRF for /api/login (disabled by default for hosting compatibility)
         $csrfRequired = (($_ENV['LOGIN_CSRF_REQUIRED'] ?? getenv('LOGIN_CSRF_REQUIRED') ?: 'false') === 'true');
