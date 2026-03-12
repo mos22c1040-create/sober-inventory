@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+
 import '../api/api_client.dart';
 import '../screens/login_screen.dart';
 
 class SoberPosApp extends StatelessWidget {
-  const SoberPosApp({super.key});
+  const SoberPosApp({super.key, required this.api});
+
+  final ApiClient api;
 
   @override
   Widget build(BuildContext context) {
-    // TODO: عدّل هذا إلى رابط السيرفر الخاص بك (HTTPs في الإنتاج)
-    const baseUrl = 'https://your-backend-domain.com';
-
     return MaterialApp(
       title: 'Sober POS Mobile',
       theme: ThemeData(
@@ -17,8 +17,7 @@ class SoberPosApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Roboto',
       ),
-      home: LoginScreen(api: ApiClient(baseUrl)),
+      home: LoginScreen(api: api),
     );
   }
 }
-

@@ -1,20 +1,38 @@
 import 'package:dio/dio.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
 
+/// عميل API مع حفظ الكوكيز (جلسة PHP بعد /api/login) — ضروري للـ APK وطلبات GET مثل /api/products
 class ApiClient {
   final Dio _dio;
 
-  ApiClient(String baseUrl)
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: baseUrl,
-            connectTimeout: const Duration(seconds: 15),
-            receiveTimeout: const Duration(seconds: 15),
-            headers: const {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
-          ),
-        );
+  ApiClient._(this._dio);
+
+  static Future<ApiClient> create(String baseUrl) async {
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+        headers: const {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
+
+    if (!kIsWeb) {
+      final dir = await getApplicationSupportDirectory();
+      final jar = PersistCookieJar(
+        storage: FileStorage('${dir.path}/.cookies/'),
+      );
+      dio.interceptors.add(CookieManager(jar));
+    }
+
+    return ApiClient._(dio);
+  }
 
   Future<Map<String, dynamic>> login({
     required String email,

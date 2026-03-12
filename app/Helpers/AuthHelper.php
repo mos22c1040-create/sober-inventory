@@ -34,10 +34,17 @@ class AuthHelper
         if (session_status() === PHP_SESSION_NONE) {
             ini_set('session.cookie_httponly', '1');
             ini_set('session.use_only_cookies', '1');
-            ini_set('session.cookie_samesite', 'Strict');
             $isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '') === 'production';
-            if ($isProduction) {
+            // Flutter Web من localhost يحتاج SameSite=None حتى يُرسل كوكي الجلسة للـ API على دومين آخر
+            $crossOrigin = (($_ENV['SESSION_CROSS_ORIGIN'] ?? getenv('SESSION_CROSS_ORIGIN') ?: '') === '1');
+            if ($crossOrigin && $isProduction) {
+                ini_set('session.cookie_samesite', 'None');
                 ini_set('session.cookie_secure', '1');
+            } else {
+                ini_set('session.cookie_samesite', 'Strict');
+                if ($isProduction) {
+                    ini_set('session.cookie_secure', '1');
+                }
             }
             session_start();
         }
@@ -216,6 +223,26 @@ class AuthHelper
      */
     private static function redirectToLogin(string $queryString = ''): never
     {
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+        $appSubDir = rtrim((string) ($_ENV['APP_SUBDIR'] ?? getenv('APP_SUBDIR') ?: ''), '/');
+        if ($appSubDir !== '' && strpos($path, $appSubDir) === 0) {
+            $path = substr($path, strlen($appSubDir)) ?: '/';
+        }
+        $path = preg_replace('#^/index\.php(?=/|$)#', '/', $path) ?: '/';
+
+        // طلبات API (موبايل / Flutter Web): لا نعيد توجيه HTML — يكسر CORS و XMLHttpRequest
+        if (strpos($path, '/api/') === 0) {
+            if (!headers_sent()) {
+                header('Access-Control-Allow-Origin: *');
+                header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+                header('Access-Control-Allow-Headers: Content-Type, Accept');
+                header('Content-Type: application/json; charset=UTF-8');
+            }
+            http_response_code(401);
+            echo json_encode(['error' => 'يجب تسجيل الدخول.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
         $url = '/login' . ($queryString !== '' ? '?' . $queryString : '');
         header('Location: ' . $url);
         exit;
