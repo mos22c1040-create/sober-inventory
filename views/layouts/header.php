@@ -1,11 +1,14 @@
 <?php
 if (!isset($basePath)) {
-    $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-    $basePath = $basePath === '' || $basePath === '\\' ? '' : $basePath;
-}
-// عندما يكون basePath '/' نستخدم '' لتفادي مسارات مزدوجة مثل //css/app.css
-if ($basePath === '/') {
-    $basePath = '';
+    /*
+     * basePath = مسار URL لجذر التطبيق بدون trailing slash.
+     * ''        → التطبيق على الجذر (Railway / Vercel / localhost:8000) ← الحالة الافتراضية
+     * '/myapp'  → إذا كان التطبيق في مجلد فرعي: ضع APP_SUBDIR=/myapp في .env
+     *
+     * لا نستخدم SCRIPT_NAME لأن قيمته تختلف بين البيئات:
+     * محلياً: /index.php، Railway: /app/public/index.php وما شابه.
+     */
+    $basePath = rtrim((string)($_ENV['APP_SUBDIR'] ?? getenv('APP_SUBDIR') ?: ''), '/');
 }
 $basePathSafe = htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8');
 ?>
@@ -17,16 +20,19 @@ $basePathSafe = htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8');
     <meta name="app-base" content="<?= $basePathSafe ?>">
     <link rel="icon" type="image/svg+xml" href="<?= $basePathSafe ?>/favicon.svg">
     <title><?= htmlspecialchars($title ?? 'نظام المخزون') ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS CDN — مقبول للـ prototype والـ MVP. للإنتاج الكامل: استخدم Tailwind CLI -->
+    <script src="https://cdn.tailwindcss.com?v=3"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Tajawal', 'system-ui', 'sans-serif'] },
-                    borderRadius: { '2xl': '1.5rem' }
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: { sans: ['Tajawal', 'system-ui', 'sans-serif'] },
+                        borderRadius: { '2xl': '1.5rem' }
+                    }
                 }
-            }
-        };
+            };
+        }
     </script>
     <link rel="stylesheet" href="<?= $basePathSafe ?>/css/app.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

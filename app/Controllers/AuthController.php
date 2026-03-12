@@ -35,7 +35,7 @@ class AuthController extends Controller
         }
 
         $csrfToken = Security::generateCsrfToken();
-        $basePath  = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\') ?: '/';
+        $basePath  = rtrim((string)($_ENV['APP_SUBDIR'] ?? getenv('APP_SUBDIR') ?: ''), '/');
         $expired   = isset($_GET['expired']) && $_GET['expired'] === '1';
 
         $this->view('auth/login', [

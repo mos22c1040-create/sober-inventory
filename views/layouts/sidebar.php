@@ -1,10 +1,6 @@
     <?php
     if (!isset($basePath)) {
-        $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-        $basePath = $basePath === '' || $basePath === '\\' ? '' : $basePath;
-    }
-    if ($basePath === '/') {
-        $basePath = '';
+        $basePath = rtrim((string)($_ENV['APP_SUBDIR'] ?? getenv('APP_SUBDIR') ?: ''), '/');
     }
     $basePathSafe = htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8');
     $appSettings = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : [];

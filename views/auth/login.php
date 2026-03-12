@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 $csrfToken = $csrfToken ?? '';
-$basePath  = $basePath ?? '/';
+$basePath  = $basePath ?? '';
 $expired   = $expired ?? false;
 $bp = htmlspecialchars(rtrim($basePath, '/'), ENT_QUOTES, 'UTF-8');
 ?>

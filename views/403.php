@@ -1,6 +1,5 @@
 <?php
-$basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-$basePath = ($basePath === '' || $basePath === '\\' || $basePath === '/') ? '' : $basePath;
+$basePath = rtrim((string)($_ENV['APP_SUBDIR'] ?? getenv('APP_SUBDIR') ?: ''), '/');
 $bp = htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
