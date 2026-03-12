@@ -260,6 +260,19 @@ button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 /* ═══════════════════════════════════════════════════════
    PAGE STRUCTURE
 ═══════════════════════════════════════════════════════ */
+/* منطقة المحتوى الرئيسي — ضمان ظهور المحتوى */
+.main-content-area {
+    min-height: 0;
+    display: block;
+}
+
+/* لوحة التحكم — حاوية الصفحة */
+.dashboard-page {
+    display: block;
+    width: 100%;
+    min-height: 360px;
+}
+
 .page-header { margin-bottom: 1.5rem; }
 .page-title {
     font-size: 1.5rem;

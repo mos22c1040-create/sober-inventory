@@ -4,14 +4,15 @@
 $appSettings    = file_exists(BASE_PATH . '/config/app_settings.php') ? (array) include BASE_PATH . '/config/app_settings.php' : [];
 $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
 $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
+$bp             = $basePathSafe ?? '';
 ?>
-
-<header class="page-header flex flex-wrap items-end justify-between gap-3">
+<div class="dashboard-page min-h-full w-full">
+<header class="page-header flex flex-wrap items-end justify-between gap-3 mb-6">
     <div>
         <h1 class="page-title">لوحة التحكم</h1>
         <p class="page-subtitle">نظرة عامة على المخزون والمبيعات</p>
     </div>
-    <a href="/pos" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200 focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
+    <a href="<?= $bp ?>/pos" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200 focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
        style="background: linear-gradient(135deg, rgb(5 150 105), rgb(16 185 129)); box-shadow: 0 4px 12px rgb(5 150 105 / 0.35);">
         <i class="fa-solid fa-cash-register"></i> نقطة البيع
     </a>
@@ -90,7 +91,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
             <h3 class="stat-value text-2xl font-extrabold" style="color: rgb(var(--foreground));">
                 <?= (int)($lowStockCount ?? 0) ?>
             </h3>
-            <a href="/products" class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200 cursor-pointer"
+            <a href="<?= $bp ?>/products" class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200 cursor-pointer"
                style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
                 إعادة تخزين <i class="fa-solid fa-arrow-left text-[10px]" aria-hidden="true"></i>
             </a>
@@ -199,7 +200,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
                 <h3 class="text-base font-bold" style="color: rgb(var(--foreground));">آخر المبيعات</h3>
                 <p class="text-xs font-medium mt-0.5" style="color: rgb(var(--muted-foreground));">أحدث الفواتير المسجّلة</p>
             </div>
-            <a href="<?= $isAdmin ? '/reports' : '/sales' ?>"
+            <a href="<?= $bp ?><?= $isAdmin ? '/reports' : '/sales' ?>"
                class="w-9 h-9 flex items-center justify-center rounded-xl transition-colors duration-200 focus:ring-2 focus:ring-blue-400 cursor-pointer"
                style="background: rgb(219 234 254); color: rgb(var(--primary));"
                aria-label="<?= $isAdmin ? 'التقارير' : 'المبيعات' ?>">
@@ -215,7 +216,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
             <div class="empty-state py-8">
                 <div class="empty-state-icon"><i class="fa-solid fa-receipt"></i></div>
                 <p class="text-sm font-medium">لا توجد مبيعات حديثة</p>
-                <a href="<?= $basePathSafe ?? '' ?>/sales/create" class="inline-block mt-3 text-sm font-bold text-blue-600 hover:text-blue-700">إنشاء فاتورة</a>
+                <a href="<?= $bp ?>/sales/create" class="inline-block mt-3 text-sm font-bold text-blue-600 hover:text-blue-700">إنشاء فاتورة</a>
             </div>
             <?php else: ?>
             <?php foreach ($recentSales as $sale):
@@ -247,7 +248,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
             <?php endif; ?>
         </div>
 
-        <a href="<?= $isAdmin ? '/reports' : '/sales' ?>"
+        <a href="<?= $bp ?><?= $isAdmin ? '/reports' : '/sales' ?>"
            class="mt-4 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 border-2 hover:text-blue-600 cursor-pointer"
            style="border-color: rgb(var(--border)); color: rgb(var(--muted-foreground));">
             <i class="fa-solid fa-list text-xs" aria-hidden="true"></i>
@@ -255,5 +256,6 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
         </a>
     </div>
 </div>
+</div><!-- .dashboard-page -->
 
 <?php require BASE_PATH . '/views/layouts/footer.php'; ?>

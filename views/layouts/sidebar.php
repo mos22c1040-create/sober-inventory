@@ -223,5 +223,5 @@
         </header>
 
         <!-- Main Scrollable Area -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 lg:p-8 min-h-0"
+        <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 lg:p-8 min-h-0 main-content-area"
               style="background: rgb(var(--background));">
