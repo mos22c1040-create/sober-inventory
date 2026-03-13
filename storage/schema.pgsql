@@ -21,20 +21,32 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Types (product types)
+CREATE TABLE IF NOT EXISTS types (
+  id          SERIAL PRIMARY KEY,
+  name        VARCHAR(100) NOT NULL,
+  description TEXT,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Products
 CREATE TABLE IF NOT EXISTS products (
-  id SERIAL PRIMARY KEY,
-  category_id INT REFERENCES categories(id) ON DELETE SET NULL,
-  name VARCHAR(255) NOT NULL,
-  sku VARCHAR(80) UNIQUE,
-  price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  cost DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  quantity INT NOT NULL DEFAULT 0,
+  id                  SERIAL PRIMARY KEY,
+  category_id         INT REFERENCES categories(id) ON DELETE SET NULL,
+  type_id             INT REFERENCES types(id) ON DELETE SET NULL,
+  name                VARCHAR(255) NOT NULL,
+  sku                 VARCHAR(80) UNIQUE,
+  price               DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  cost                DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  quantity            INT NOT NULL DEFAULT 0,
   low_stock_threshold INT NOT NULL DEFAULT 5,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  unit                VARCHAR(50) DEFAULT 'قطعة',
+  description         TEXT,
+  created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_type     ON products(type_id);
 
 -- Sales
 CREATE TABLE IF NOT EXISTS sales (
@@ -42,10 +54,12 @@ CREATE TABLE IF NOT EXISTS sales (
   user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   invoice_number VARCHAR(50) NOT NULL UNIQUE,
   customer_name VARCHAR(255) DEFAULT 'Walk-in Customer',
-  total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  total          DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  discount       DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   payment_method VARCHAR(20) DEFAULT 'cash' CHECK (payment_method IN ('cash','card','mixed')),
-  status VARCHAR(20) DEFAULT 'paid' CHECK (status IN ('paid','pending','cancelled')),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  status         VARCHAR(20) DEFAULT 'paid' CHECK (status IN ('paid','pending','cancelled')),
+  notes          TEXT,
+  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_sales_user ON sales(user_id);
 CREATE INDEX IF NOT EXISTS idx_sales_created ON sales(created_at);
@@ -106,6 +120,19 @@ CREATE TABLE IF NOT EXISTS sessions (
   last_activity INT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_sessions_last ON sessions(last_activity);
+
+-- Expenses
+CREATE TABLE IF NOT EXISTS expenses (
+  id         SERIAL PRIMARY KEY,
+  user_id    INT REFERENCES users(id) ON DELETE SET NULL,
+  title      VARCHAR(255) NOT NULL,
+  amount     DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  category   VARCHAR(100),
+  notes      TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_expenses_user    ON expenses(user_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_created ON expenses(created_at);
 
 -- Trigger: update products.updated_at on row update
 CREATE OR REPLACE FUNCTION set_updated_at()

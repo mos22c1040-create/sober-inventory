@@ -9,8 +9,44 @@ import 'dio_stub.dart' if (dart.library.html) 'dio_web.dart' as dio_web;
 /// عميل API مع حفظ الكوكيز (جلسة PHP بعد /api/login) — ضروري للـ APK وطلبات GET مثل /api/products
 class ApiClient {
   final Dio _dio;
+  void Function()? _onUnauthorized;
 
-  ApiClient._(this._dio);
+  ApiClient._(this._dio) : _onUnauthorized = null;
+
+  /// عند استلام 401 من أي مسار (ما عدا /api/login) يتم استدعاء هذا الـ callback — عادة إعادة توجيه لشاشة تسجيل الدخول
+  void setOnUnauthorized(void Function() callback) {
+    _onUnauthorized = callback;
+  }
+
+  // ── Envelope helpers ────────────────────────────────────────────────────
+  // Controller::jsonResponse wraps every response in:
+  //   {"success": true, "status": 200, "data": <your_data>, "error": null}
+  // _d() unwraps one level: returns the inner "data" as a Map.
+  // _lst() returns the inner list (handles both direct list and {"data":[...]} nesting).
+
+  static Map<String, dynamic> _d(dynamic raw) {
+    if (raw is Map) {
+      final d = raw['data'];
+      if (d is Map) return Map<String, dynamic>.from(d);
+    }
+    return <String, dynamic>{};
+  }
+
+  static List<Map<String, dynamic>> _lst(dynamic raw, [String key = 'data']) {
+    if (raw is Map) {
+      final d = raw['data'];
+      if (d is Map) {
+        final list = d[key];
+        if (list is List) {
+          return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+      }
+      if (d is List) {
+        return d.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+    }
+    return <Map<String, dynamic>>[];
+  }
 
   static Future<ApiClient> create(String baseUrl) async {
     final dio = Dio(
@@ -35,7 +71,22 @@ class ApiClient {
       dio.interceptors.add(CookieManager(jar));
     }
 
-    return ApiClient._(dio);
+    final client = ApiClient._(dio);
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (error, handler) {
+          final status = error.response?.statusCode;
+          final path = error.requestOptions.path;
+          if (status == 401 && path != null && !path.contains('login')) {
+            client._onUnauthorized?.call();
+          }
+          handler.next(error);
+        },
+      ),
+    );
+
+    return client;
   }
 
   Future<Map<String, dynamic>> login({
@@ -64,7 +115,7 @@ class ApiClient {
         'per_page': perPage,
       },
     );
-    return Map<String, dynamic>.from(response.data ?? <String, dynamic>{});
+    return _d(response.data);
   }
 
   Future<Map<String, dynamic>> findByBarcode(String sku) async {
@@ -72,17 +123,26 @@ class ApiClient {
       '/api/products/barcode',
       queryParameters: <String, dynamic>{'sku': sku},
     );
-    return Map<String, dynamic>.from(response.data ?? <String, dynamic>{});
+    return _d(response.data);
+  }
+
+  /// منتجات منخفضة المخزون (للإشعارات والتقارير)
+  Future<List<Map<String, dynamic>>> getLowStockProducts({int limit = 30}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/products/low-stock',
+      queryParameters: <String, dynamic>{'limit': limit},
+    );
+    return _lst(response.data);
   }
 
   Future<Map<String, dynamic>> getMe() async {
     final response = await _dio.get<Map<String, dynamic>>('/api/me');
-    return Map<String, dynamic>.from(response.data ?? <String, dynamic>{});
+    return _d(response.data);
   }
 
   Future<Map<String, dynamic>> getDashboard() async {
     final response = await _dio.get<Map<String, dynamic>>('/api/dashboard');
-    return Map<String, dynamic>.from(response.data ?? <String, dynamic>{});
+    return _d(response.data);
   }
 
   Future<Map<String, dynamic>> getPosProducts({String search = ''}) async {
@@ -90,7 +150,7 @@ class ApiClient {
       '/api/pos/products',
       queryParameters: search.isEmpty ? null : <String, dynamic>{'q': search},
     );
-    return Map<String, dynamic>.from(response.data ?? <String, dynamic>{});
+    return _d(response.data);
   }
 
   Future<Map<String, dynamic>> postPosComplete({
@@ -123,7 +183,7 @@ class ApiClient {
       '/api/sales',
       queryParameters: {'page': page, 'per_page': perPage},
     );
-    return Map<String, dynamic>.from(r.data ?? {});
+    return _d(r.data);
   }
 
   Future<Map<String, dynamic>> cancelSale({
@@ -142,8 +202,7 @@ class ApiClient {
 
   Future<List<Map<String, dynamic>>> getCategories() async {
     final r = await _dio.get<Map<String, dynamic>>('/api/categories');
-    final list = (r.data?['data'] as List?) ?? [];
-    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return _lst(r.data);
   }
 
   Future<Map<String, dynamic>> createCategory({
@@ -185,6 +244,52 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data ?? {});
   }
 
+  // ── Types (الأنواع) ───────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getTypes() async {
+    final r = await _dio.get<Map<String, dynamic>>('/api/types');
+    return _lst(r.data);
+  }
+
+  Future<Map<String, dynamic>> createType({
+    required String name,
+    String? description,
+    required String csrfToken,
+  }) async {
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/api/types',
+      data: {'name': name, 'description': description, 'csrf_token': csrfToken},
+      options: Options(contentType: Headers.jsonContentType),
+    );
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  Future<Map<String, dynamic>> updateType({
+    required int id,
+    required String name,
+    String? description,
+    required String csrfToken,
+  }) async {
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/api/types/update',
+      data: {'id': id, 'name': name, 'description': description, 'csrf_token': csrfToken},
+      options: Options(contentType: Headers.jsonContentType),
+    );
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  Future<Map<String, dynamic>> deleteType({
+    required int id,
+    required String csrfToken,
+  }) async {
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/api/types/delete',
+      data: {'id': id, 'csrf_token': csrfToken},
+      options: Options(contentType: Headers.jsonContentType),
+    );
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
   // ── Expenses ─────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getExpenses({int page = 1}) async {
@@ -192,7 +297,7 @@ class ApiClient {
       '/api/expenses/list',
       queryParameters: {'page': page},
     );
-    return Map<String, dynamic>.from(r.data ?? {});
+    return _d(r.data);
   }
 
   Future<Map<String, dynamic>> createExpense({
@@ -255,7 +360,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>> getPurchases() async {
     final r = await _dio.get<Map<String, dynamic>>('/api/purchases/list');
-    return Map<String, dynamic>.from(r.data ?? {});
+    return _d(r.data);
   }
 
   Future<Map<String, dynamic>> createPurchase({
@@ -281,15 +386,14 @@ class ApiClient {
         if (to != null) 'to': to,
       },
     );
-    return Map<String, dynamic>.from(r.data ?? {});
+    return _d(r.data);
   }
 
   // ── Users ────────────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getUsers() async {
     final r = await _dio.get<Map<String, dynamic>>('/api/users/list');
-    final list = (r.data?['data'] as List?) ?? [];
-    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return _lst(r.data);
   }
 
   Future<Map<String, dynamic>> createUser({
@@ -333,15 +437,14 @@ class ApiClient {
       '/api/activity-log/list',
       queryParameters: {'limit': limit},
     );
-    final list = (r.data?['data'] as List?) ?? [];
-    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return _lst(r.data);
   }
 
   // ── Settings ─────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getSettings() async {
     final r = await _dio.get<Map<String, dynamic>>('/api/settings/data');
-    return Map<String, dynamic>.from(r.data?['data'] as Map? ?? {});
+    return _d(r.data);
   }
 
   Future<Map<String, dynamic>> saveSettings({
@@ -372,6 +475,7 @@ class ApiClient {
     String? sku,
     double? cost,
     int? categoryId,
+    int? typeId,
     int? lowStockThreshold,
     required String csrfToken,
   }) async {
@@ -384,6 +488,7 @@ class ApiClient {
         if (sku != null) 'sku': sku,
         if (cost != null) 'cost': cost,
         if (categoryId != null) 'category_id': categoryId,
+        if (typeId != null) 'type_id': typeId,
         'low_stock_threshold': lowStockThreshold ?? 5,
         'csrf_token': csrfToken,
       },
@@ -400,6 +505,7 @@ class ApiClient {
     String? sku,
     double? cost,
     int? categoryId,
+    int? typeId,
     int? lowStockThreshold,
     required String csrfToken,
   }) async {
@@ -413,6 +519,7 @@ class ApiClient {
         if (sku != null) 'sku': sku,
         if (cost != null) 'cost': cost,
         if (categoryId != null) 'category_id': categoryId,
+        if (typeId != null) 'type_id': typeId,
         'low_stock_threshold': lowStockThreshold ?? 5,
         'csrf_token': csrfToken,
       },
