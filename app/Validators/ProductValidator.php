@@ -47,15 +47,19 @@ class ProductValidator
         }
 
         $categoryId = !empty($input['category_id']) ? (int) $input['category_id'] : null;
+        $typeId     = !empty($input['type_id']) ? (int) $input['type_id'] : null;
 
         $data = [
             'name'                => Security::sanitizeString($name),
             'category_id'         => $categoryId,
+            'type_id'             => $typeId,
             'sku'                 => isset($input['sku']) ? Security::sanitizeString((string) $input['sku']) : null,
             'price'               => $price,
             'cost'                => $cost,
             'quantity'            => $quantity,
             'low_stock_threshold' => $lowStockThreshold,
+            'unit'                => isset($input['unit']) ? Security::sanitizeString((string) $input['unit']) : 'قطعة',
+            'description'         => isset($input['description']) ? Security::sanitizeString((string) $input['description']) : null,
         ];
 
         return [

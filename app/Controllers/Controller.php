@@ -33,7 +33,21 @@ abstract class Controller
     {
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=UTF-8');
-        echo json_encode($data);
+
+        $envelope = [
+            'success' => $statusCode >= 200 && $statusCode < 400,
+            'status' => $statusCode,
+            'data' => null,
+            'error' => null,
+        ];
+
+        if ($envelope['success']) {
+            $envelope['data'] = $data;
+        } else {
+            $envelope['error'] = is_array($data) ? ($data['error'] ?? json_encode($data)) : $data;
+        }
+
+        echo json_encode($envelope, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
 

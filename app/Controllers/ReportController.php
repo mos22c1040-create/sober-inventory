@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
 use App\Core\Database;
+use App\Models\Product;
 
 class ReportController extends Controller
 {
@@ -170,14 +171,17 @@ class ReportController extends Controller
             // profit columns unavailable — skip silently
         }
 
+        $lowStockProducts = Product::getLowStockProducts(20);
+
         $this->view('reports/index', [
-            'title'           => 'التقارير',
-            'salesByDay'      => $salesByDay,
-            'topProducts'     => $topProducts,
-            'profitRow'       => $profitRow ?: ['total_revenue' => 0, 'total_cost' => 0, 'gross_profit' => 0],
-            'profitByProduct' => $profitByProduct ?: [],
-            'dateFrom'        => $from,
-            'dateTo'          => $to,
+            'title'             => 'التقارير',
+            'salesByDay'        => $salesByDay,
+            'topProducts'       => $topProducts,
+            'profitRow'         => $profitRow ?: ['total_revenue' => 0, 'total_cost' => 0, 'gross_profit' => 0],
+            'profitByProduct'   => $profitByProduct ?: [],
+            'lowStockProducts'  => $lowStockProducts,
+            'dateFrom'          => $from,
+            'dateTo'            => $to,
         ]);
     }
 

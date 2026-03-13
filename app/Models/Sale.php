@@ -203,6 +203,32 @@ class Sale
         return (int) ($row['cnt'] ?? 0);
     }
 
+    /** إجمالي مبيعات أمس (للمقارنة في لوحة التحكم). */
+    public static function yesterdayTotal(): float
+    {
+        $db = Database::getInstance();
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        $sql = $db->getDriver() === 'pgsql'
+            ? "SELECT COALESCE(SUM(total), 0) AS total FROM sales WHERE (created_at::date) = :d AND status = 'paid'"
+            : "SELECT COALESCE(SUM(total), 0) AS total FROM sales WHERE DATE(created_at) = :d AND status = 'paid'";
+        $stmt = $db->query($sql, [':d' => $yesterday]);
+        $row = $stmt->fetch();
+        return (float) ($row['total'] ?? 0);
+    }
+
+    /** عدد فواتير أمس. */
+    public static function yesterdayCount(): int
+    {
+        $db = Database::getInstance();
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        $sql = $db->getDriver() === 'pgsql'
+            ? "SELECT COUNT(*) AS cnt FROM sales WHERE (created_at::date) = :d AND status = 'paid'"
+            : "SELECT COUNT(*) AS cnt FROM sales WHERE DATE(created_at) = :d AND status = 'paid'";
+        $stmt = $db->query($sql, [':d' => $yesterday]);
+        $row = $stmt->fetch();
+        return (int) ($row['cnt'] ?? 0);
+    }
+
     /**
      * إجمالي المبيعات (المدفوعة) لكل يوم لآخر $days يوم.
      * المفتاح: تاريخ Y-m-d، القيمة: المجموع.

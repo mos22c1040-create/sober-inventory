@@ -10,6 +10,7 @@ use App\Helpers\Security;
 use App\Models\Sale;
 use App\Models\Product;
 use App\Models\ActivityLog;
+use App\Services\SaleService;
 use PDOException;
 
 class SaleController extends Controller
@@ -150,7 +151,7 @@ class SaleController extends Controller
         }
 
         $customerName  = trim(Security::sanitizeString((string) ($input['customer_name'] ?? '')));
-        $paymentMethod = in_array($input['payment_method'] ?? '', ['cash', 'card']) ? $input['payment_method'] : 'cash';
+        $paymentMethod = in_array($input['payment_method'] ?? '', ['cash', 'card', 'mixed']) ? $input['payment_method'] : 'cash';
         $discount      = max(0.0, (float) ($input['discount'] ?? 0));
         $notes         = trim(Security::sanitizeString((string) ($input['notes'] ?? '')));
         $items         = $input['items'] ?? [];
@@ -163,45 +164,23 @@ class SaleController extends Controller
             $this->jsonResponse(['error' => 'الفاتورة فارغة'], 422);
         }
 
-        // Validate items and check stock
-        $validItems = [];
-        foreach ($items as $item) {
-            $productId = (int) ($item['product_id'] ?? 0);
-            $qty       = (int) ($item['quantity'] ?? 0);
-            
-            if ($productId <= 0 || $qty <= 0) {
-                $this->jsonResponse(['error' => 'بيانات المنتجات غير صالحة'], 422);
-            }
-
-            $product = Product::find($productId);
-            if (!$product) {
-                $this->jsonResponse(['error' => "المنتج رقم $productId غير موجود"], 404);
-            }
-
-            if ($product['quantity'] < $qty) {
-                $this->jsonResponse(['error' => "الكمية المتوفرة من {$product['name']} غير كافية (المتوفر: {$product['quantity']})"], 422);
-            }
-
-            $price = (float) $product['price'];
-            $validItems[] = [
-                'product_id' => $productId,
-                'quantity'   => $qty,
-                'unit_price' => $price,
-                'total'      => $qty * $price,
-            ];
-        }
-
         try {
             $userId = AuthHelper::userId();
-            $saleId = Sale::create($userId, $validItems, $customerName, $paymentMethod, $discount, $notes);
+            $saleId = SaleService::createSale($userId, [
+                'items'          => $items,
+                'customer_name'  => $customerName,
+                'payment_method' => $paymentMethod,
+                'discount'       => $discount,
+                'notes'          => $notes,
+            ]);
 
-            ActivityLog::log('sale.create', 'sale', $saleId, "فاتورة للعميل: $customerName");
-
-            // Invalidate dashboard daily-totals cache after a new sale
             FileCache::delete('dashboard_daily_totals_7');
 
             $this->jsonResponse(['success' => true, 'sale_id' => $saleId, 'redirect' => '/sales']);
+        } catch (\InvalidArgumentException $e) {
+            $this->jsonResponse(['error' => $e->getMessage()], 400);
         } catch (\Exception $e) {
+            error_log('SaleService::createSale failed: ' . $e->getMessage());
             $this->jsonResponse(['error' => 'حدث خطأ أثناء حفظ الفاتورة'], 500);
         }
     }

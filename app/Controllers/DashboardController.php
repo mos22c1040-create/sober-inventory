@@ -25,10 +25,14 @@ class DashboardController extends Controller
 
         $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
+        $yesterdaySales = 0.0;
+        $yesterdayCount  = 0;
         try {
-            $todaySales  = Sale::todayTotal();
-            $todayCount  = Sale::todayCount();
-            $recentSales = Sale::all(10);
+            $todaySales     = Sale::todayTotal();
+            $todayCount     = Sale::todayCount();
+            $yesterdaySales = Sale::yesterdayTotal();
+            $yesterdayCount = Sale::yesterdayCount();
+            $recentSales    = Sale::all(10);
 
             // Cache the 7-day daily totals for 5 minutes — avoids re-aggregating on every page load
             $rawDaily = FileCache::remember(
@@ -54,23 +58,27 @@ class DashboardController extends Controller
             }
         }
 
+        $lowStockProducts = [];
         try {
-            // Use COUNT query instead of fetching all rows
-            $productCount  = FileCache::remember('dashboard_product_count', static fn() => Product::count(), 120);
-            $lowStockCount = Product::countLowStock();
+            $productCount   = FileCache::remember('dashboard_product_count', static fn() => Product::count(), 120);
+            $lowStockCount  = Product::countLowStock();
+            $lowStockProducts = $lowStockCount > 0 ? Product::getLowStockProducts(15) : [];
         } catch (PDOException $e) {
             // Table missing
         }
 
         $this->view('dashboard/index', [
-            'title'        => 'نظرة عامة على لوحة التحكم',
-            'todaySales'   => $todaySales,
-            'todayCount'   => $todayCount,
-            'productCount' => $productCount,
-            'lowStockCount'=> $lowStockCount,
-            'recentSales'  => $recentSales,
-            'dailyTotals'  => $dailyTotals ?? [],
-            'loadChartJs'  => true,
+            'title'             => 'نظرة عامة على لوحة التحكم',
+            'todaySales'        => $todaySales,
+            'todayCount'        => $todayCount,
+            'yesterdaySales'    => $yesterdaySales,
+            'yesterdayCount'    => $yesterdayCount,
+            'productCount'      => $productCount,
+            'lowStockCount'     => $lowStockCount,
+            'lowStockProducts'  => $lowStockProducts,
+            'recentSales'       => $recentSales,
+            'dailyTotals'       => $dailyTotals ?? [],
+            'loadChartJs'       => true,
         ]);
     }
 

@@ -21,9 +21,10 @@ class Product
         $db = Database::getInstance();
 
         if ($withCategory) {
-            $sql = "SELECT p.*, c.name AS category_name
+            $sql = "SELECT p.*, c.name AS category_name, t.name AS type_name
                       FROM products p
                  LEFT JOIN categories c ON p.category_id = c.id
+                 LEFT JOIN types t ON p.type_id = t.id
                   ORDER BY p.name ASC";
         } else {
             $sql = "SELECT *
@@ -69,9 +70,10 @@ class Product
         $offsetInt  = (int) $offset;
 
         $stmt = Database::getInstance()->query(
-            "SELECT p.*, c.name AS category_name
+            "SELECT p.*, c.name AS category_name, t.name AS type_name
                FROM products p
           LEFT JOIN categories c ON p.category_id = c.id
+          LEFT JOIN types t ON p.type_id = t.id
               ORDER BY p.name ASC
               LIMIT {$perPageInt} OFFSET {$offsetInt}"
         );
@@ -85,11 +87,75 @@ class Product
         ];
     }
 
+    /**
+     * شرط SQL حسب فلتر حالة المخزون (للاستعلامات المجهزة).
+     * القيم: all | in_stock | low | out
+     */
+    private static function stockFilterWhere(string $filter): string
+    {
+        switch ($filter) {
+            case 'out':
+                return 'p.quantity <= 0';
+            case 'low':
+                return 'p.quantity > 0 AND p.low_stock_threshold > 0 AND p.quantity <= p.low_stock_threshold';
+            case 'in_stock':
+                return 'p.quantity > 0 AND (p.low_stock_threshold = 0 OR p.quantity > p.low_stock_threshold)';
+            default:
+                return '1=1';
+        }
+    }
+
+    public static function countByStockFilter(string $filter): int
+    {
+        if ($filter === 'all' || $filter === '') {
+            return self::count();
+        }
+        $where = self::stockFilterWhere($filter);
+        $stmt = Database::getInstance()->query("SELECT COUNT(*) AS cnt FROM products p WHERE {$where}");
+        $row = $stmt->fetch();
+        return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
+     * Paginate products with optional stock filter.
+     *
+     * @param string $stockFilter 'all' | 'in_stock' | 'low' | 'out'
+     */
+    public static function paginateByStockFilter(int $page = 1, int $perPage = 20, string $stockFilter = 'all'): array
+    {
+        $page    = max(1, $page);
+        $perPage = max(1, min(100, $perPage));
+        $offset  = ($page - 1) * $perPage;
+        $where   = self::stockFilterWhere($stockFilter);
+        $total   = self::countByStockFilter($stockFilter);
+
+        $limitInt  = (int) $perPage;
+        $offsetInt = (int) $offset;
+
+        $stmt = Database::getInstance()->query(
+            "SELECT p.*, c.name AS category_name, t.name AS type_name
+               FROM products p
+          LEFT JOIN categories c ON p.category_id = c.id
+          LEFT JOIN types t ON p.type_id = t.id
+              WHERE {$where}
+              ORDER BY p.name ASC
+              LIMIT {$limitInt} OFFSET {$offsetInt}"
+        );
+
+        return [
+            'data'    => $stmt->fetchAll(),
+            'total'   => $total,
+            'page'    => $page,
+            'perPage' => $perPage,
+            'pages'   => $total > 0 ? (int) ceil($total / $perPage) : 0,
+        ];
+    }
+
     public static function find(int $id): ?array
     {
         $db = Database::getInstance();
         $stmt = $db->query(
-            "SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = :id LIMIT 1",
+            "SELECT p.*, c.name AS category_name, t.name AS type_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN types t ON p.type_id = t.id WHERE p.id = :id LIMIT 1",
             [':id' => $id]
         );
         $row = $stmt->fetch();
@@ -105,7 +171,7 @@ class Product
         }
         $db = Database::getInstance();
         $stmt = $db->query(
-            "SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.sku = :sku LIMIT 1",
+            "SELECT p.*, c.name AS category_name, t.name AS type_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN types t ON p.type_id = t.id WHERE p.sku = :sku LIMIT 1",
             [':sku' => $sku]
         );
         $row = $stmt->fetch();
@@ -116,10 +182,11 @@ class Product
     {
         $db = Database::getInstance();
         $db->query(
-            "INSERT INTO products (category_id, name, sku, price, cost, quantity, low_stock_threshold, unit, description)
-             VALUES (:category_id, :name, :sku, :price, :cost, :quantity, :low_stock_threshold, :unit, :description)",
+            "INSERT INTO products (category_id, type_id, name, sku, price, cost, quantity, low_stock_threshold, unit, description)
+             VALUES (:category_id, :type_id, :name, :sku, :price, :cost, :quantity, :low_stock_threshold, :unit, :description)",
             [
                 ':category_id'         => !empty($data['category_id']) ? (int) $data['category_id'] : null,
+                ':type_id'             => !empty($data['type_id']) ? (int) $data['type_id'] : null,
                 ':name'                => $data['name'],
                 ':sku'                 => $data['sku'] ?? null,
                 ':price'               => (float) ($data['price'] ?? 0),
@@ -137,13 +204,14 @@ class Product
     {
         $db = Database::getInstance();
         $stmt = $db->query(
-            "UPDATE products SET category_id = :category_id, name = :name, sku = :sku, price = :price,
+            "UPDATE products SET category_id = :category_id, type_id = :type_id, name = :name, sku = :sku, price = :price,
               cost = :cost, quantity = :quantity, low_stock_threshold = :low_stock_threshold,
               unit = :unit, description = :description
              WHERE id = :id",
             [
                 ':id'                  => $id,
                 ':category_id'         => !empty($data['category_id']) ? (int) $data['category_id'] : null,
+                ':type_id'             => !empty($data['type_id']) ? (int) $data['type_id'] : null,
                 ':name'                => $data['name'],
                 ':sku'                 => $data['sku'] ?? null,
                 ':price'               => (float) ($data['price'] ?? 0),
@@ -243,5 +311,25 @@ class Product
         $stmt = $db->query("SELECT COUNT(*) AS cnt FROM products WHERE quantity <= low_stock_threshold AND low_stock_threshold > 0");
         $row = $stmt->fetch();
         return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
+     * قائمة منتجات منخفضة المخزون (للتقارير والإشعارات).
+     *
+     * @param int $limit
+     * @return array<int, array<string, mixed>>
+     */
+    public static function getLowStockProducts(int $limit = 30): array
+    {
+        $limit = max(1, min(100, $limit));
+        $db = Database::getInstance();
+        $stmt = $db->query(
+            "SELECT id, name, sku, quantity, low_stock_threshold, price
+             FROM products
+             WHERE quantity <= low_stock_threshold AND low_stock_threshold > 0
+             ORDER BY quantity ASC
+             LIMIT " . (int) $limit
+        );
+        return $stmt->fetchAll();
     }
 }

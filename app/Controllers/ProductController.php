@@ -11,6 +11,7 @@ use App\Helpers\Security;
 use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Type;
 use App\Validators\ProductValidator;
 
 class ProductController extends Controller
@@ -18,13 +19,19 @@ class ProductController extends Controller
     public function index(): void
     {
         AuthHelper::requireAuth();
-        $page       = max(1, (int) ($_GET['page'] ?? 1));
-        $paginated  = Product::paginate($page, 20);
+        $page   = max(1, (int) ($_GET['page'] ?? 1));
+        $stock  = (string) ($_GET['stock'] ?? 'all');
+        $allowed = ['all', 'in_stock', 'low', 'out'];
+        if (!in_array($stock, $allowed, true)) {
+            $stock = 'all';
+        }
+        $paginated = Product::paginateByStockFilter($page, 20, $stock);
         $this->view('products/index', [
-            'title'      => 'المنتجات',
-            'products'   => $paginated['data'],
-            'pagination' => $paginated,
-            'csrfToken'  => Security::generateCsrfToken(),
+            'title'       => 'المنتجات',
+            'products'    => $paginated['data'],
+            'pagination'  => $paginated,
+            'stockFilter' => $stock,
+            'csrfToken'   => Security::generateCsrfToken(),
         ]);
     }
 
@@ -59,15 +66,25 @@ class ProductController extends Controller
         ]);
     }
 
+    /** GET /api/products/low-stock — منتجات منخفضة المخزون (للإشعارات والتقارير) */
+    public function lowStockApi(): void
+    {
+        AuthHelper::requireAuth();
+        $limit = max(1, min(100, (int) ($_GET['limit'] ?? 30)));
+        $this->jsonResponse(['data' => Product::getLowStockProducts($limit)]);
+    }
+
     public function create(): void
     {
         AuthHelper::requireRole('admin');
         $categories = Category::all();
+        $types     = Type::all();
         $this->view('products/form', [
-            'title' => 'إضافة منتج',
-            'product' => null,
+            'title'      => 'إضافة منتج',
+            'product'    => null,
             'categories' => $categories,
-            'csrfToken' => Security::generateCsrfToken(),
+            'types'      => $types,
+            'csrfToken'  => Security::generateCsrfToken(),
         ]);
     }
 
@@ -103,11 +120,13 @@ class ProductController extends Controller
             return;
         }
         $categories = Category::all();
+        $types      = Type::all();
         $this->view('products/form', [
-            'title' => 'تعديل المنتج',
-            'product' => $product,
+            'title'      => 'تعديل المنتج',
+            'product'    => $product,
             'categories' => $categories,
-            'csrfToken' => Security::generateCsrfToken(),
+            'types'      => $types,
+            'csrfToken'  => Security::generateCsrfToken(),
         ]);
     }
 
