@@ -46,6 +46,25 @@ class AuthController extends Controller
     }
 
     // -------------------------------------------------------------------------
+    // GET /api/me — بيانات المستخدم الحالي + csrf_token (للموبايل)
+    // -------------------------------------------------------------------------
+
+    public function me(): void
+    {
+        AuthHelper::requireAuth();
+        $this->jsonResponse([
+            'user' => [
+                'id'       => (int) $_SESSION['user_id'],
+                'username' => (string) ($_SESSION['username'] ?? ''),
+                'name'     => (string) ($_SESSION['name'] ?? $_SESSION['username'] ?? ''),
+                'email'    => (string) ($_SESSION['email'] ?? ''),
+                'role'     => (string) ($_SESSION['role'] ?? ''),
+            ],
+            'csrf_token' => Security::generateCsrfToken(),
+        ]);
+    }
+
+    // -------------------------------------------------------------------------
     // POST /api/login  (Fetch API — JSON in / JSON out)
     // -------------------------------------------------------------------------
 

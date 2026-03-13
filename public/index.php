@@ -84,12 +84,14 @@ $router = new App\Core\Router();
 
 // Define Auth Routes
 $router->get('/login', 'AuthController@showLogin');
+$router->get('/api/me', 'AuthController@me');
 $router->post('/api/login', 'AuthController@login');
 $router->post('/api/logout', 'AuthController@logout');
 
 // Define some basic routes
 $router->get('/', 'HomeController@index');
 $router->get('/dashboard', 'DashboardController@index');
+$router->get('/api/dashboard', 'DashboardController@indexApi');
 $router->get('/pos', 'PosController@index');
 $router->get('/api/pos/products', 'PosController@products');
 $router->post('/api/pos/complete', 'PosController@complete');

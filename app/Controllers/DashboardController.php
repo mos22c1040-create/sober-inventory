@@ -73,4 +73,48 @@ class DashboardController extends Controller
             'loadChartJs'  => true,
         ]);
     }
+
+    /** GET /api/dashboard — JSON for mobile app. */
+    public function indexApi(): void
+    {
+        AuthHelper::requireAuth();
+
+        $todaySales  = 0.0;
+        $todayCount  = 0;
+        $productCount = 0;
+        $lowStockCount = 0;
+        $dailyTotals = [];
+
+        $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+        try {
+            $todaySales   = Sale::todayTotal();
+            $todayCount   = Sale::todayCount();
+            $productCount = Product::count();
+            $lowStockCount = Product::countLowStock();
+            $rawDaily     = FileCache::remember(
+                'dashboard_daily_totals_7',
+                static fn() => Sale::getDailyTotalsLastDays(7),
+                300
+            );
+            for ($i = 6; $i >= 0; $i--) {
+                $d = date('Y-m-d', strtotime("-{$i} days"));
+                $dailyTotals[] = [
+                    'date'  => $d,
+                    'total' => (float) ($rawDaily[$d] ?? 0.0),
+                    'label' => $dayNames[(int) date('w', strtotime($d))],
+                ];
+            }
+        } catch (\Throwable $e) {
+            // keep defaults
+        }
+
+        $this->jsonResponse([
+            'today_sales'    => $todaySales,
+            'today_count'    => $todayCount,
+            'product_count'  => $productCount,
+            'low_stock_count'=> $lowStockCount,
+            'daily_totals'   => $dailyTotals,
+        ]);
+    }
 }
