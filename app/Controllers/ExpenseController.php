@@ -39,6 +39,28 @@ class ExpenseController extends Controller
         ]);
     }
 
+    /** GET /api/expenses/list — JSON for mobile (admin only) */
+    public function indexApi(): void
+    {
+        AuthHelper::requireRole('admin');
+        $page    = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = max(1, min(50, (int) ($_GET['per_page'] ?? 25)));
+        try {
+            $result       = Expense::paginate($page, $perPage);
+            $monthlyTotal = Expense::monthlyTotal();
+        } catch (\PDOException $e) {
+            $result       = ['data' => [], 'total' => 0, 'page' => 1, 'perPage' => $perPage, 'pages' => 0];
+            $monthlyTotal = 0.0;
+        }
+        $this->jsonResponse([
+            'data'          => $result['data'],
+            'page'          => $result['page'],
+            'pages'         => $result['pages'],
+            'total'         => $result['total'],
+            'monthly_total' => $monthlyTotal,
+        ]);
+    }
+
     public function create(): void
     {
         AuthHelper::requireRole('admin');

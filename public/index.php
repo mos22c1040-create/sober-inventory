@@ -120,6 +120,7 @@ $router->post('/api/categories/delete', 'CategoryController@delete');
 
 // Sales
 $router->get('/sales', 'SaleController@index');
+$router->get('/api/sales', 'SaleController@indexApi');
 $router->get('/sales/create', 'SaleController@create');
 $router->get('/sales/receipt', 'SaleController@receipt');
 $router->post('/api/sales', 'SaleController@store');
@@ -127,12 +128,14 @@ $router->post('/api/sales/cancel', 'SaleController@cancel');
 
 // Purchases
 $router->get('/purchases', 'PurchaseController@index');
+$router->get('/api/purchases/list', 'PurchaseController@indexApi');
 $router->get('/purchases/create', 'PurchaseController@create');
 $router->post('/api/purchases', 'PurchaseController@store');
 $router->post('/api/purchases/delete', 'PurchaseController@delete');
 
 // Expenses
 $router->get('/expenses', 'ExpenseController@index');
+$router->get('/api/expenses/list', 'ExpenseController@indexApi');
 $router->get('/expenses/create', 'ExpenseController@create');
 $router->get('/expenses/edit', 'ExpenseController@edit');
 $router->post('/api/expenses', 'ExpenseController@store');
@@ -141,24 +144,31 @@ $router->post('/api/expenses/delete', 'ExpenseController@delete');
 
 // Reports
 $router->get('/reports', 'ReportController@index');
+$router->get('/api/reports/data', 'ReportController@indexApi');
 $router->get('/reports/export/sales', 'ReportController@exportSalesCsv');
 $router->get('/reports/export/products', 'ReportController@exportTopProductsCsv');
 
 // Activity log (Admin only)
 $router->get('/activity-log', 'ActivityLogController@index');
+$router->get('/api/activity-log/list', 'ActivityLogController@indexApi');
 
 // Settings (Admin only)
 $router->get('/settings', 'SettingsController@index');
+$router->get('/api/settings/data', 'SettingsController@getApi');
 $router->post('/api/settings', 'SettingsController@store');
 
 // Users (Admin only)
 $router->get('/users',              'UserController@index');
+$router->get('/api/users/list',     'UserController@indexApi');
 $router->get('/users/create',       'UserController@create');
 $router->post('/api/users',         'UserController@store');
 $router->get('/users/edit',         'UserController@edit');
 $router->post('/api/users/update',  'UserController@update');
 $router->post('/api/users/password','UserController@changePassword');
 $router->post('/api/users/delete',  'UserController@delete');
+
+// Categories (API)
+$router->get('/api/categories', 'CategoryController@indexApi');
 
 // حسابي (للمستخدم الحالي)
 $router->get('/profile', 'ProfileController@index');

@@ -20,4 +20,12 @@ class ActivityLogController extends Controller
             'entries' => $entries,
         ]);
     }
+
+    /** GET /api/activity-log/list — JSON for mobile (admin only) */
+    public function indexApi(): void
+    {
+        AuthHelper::requireRole('admin');
+        $limit = max(1, min(200, (int) ($_GET['limit'] ?? 100)));
+        $this->jsonResponse(['data' => ActivityLog::getRecent($limit)]);
+    }
 }

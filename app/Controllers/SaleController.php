@@ -108,6 +108,34 @@ class SaleController extends Controller
         }
     }
 
+    /** GET /api/sales — JSON list for mobile */
+    public function indexApi(): void
+    {
+        AuthHelper::requireAuth();
+        $page    = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = max(1, min(50, (int) ($_GET['per_page'] ?? 25)));
+        try {
+            $paginated    = Sale::paginate($page, $perPage);
+            $todayTotal   = Sale::todayTotal();
+            $todayCount   = Sale::todayCount();
+            $monthlyTotal = Sale::monthlyTotal();
+        } catch (\PDOException $e) {
+            $paginated    = ['data' => [], 'total' => 0, 'page' => 1, 'perPage' => $perPage, 'pages' => 0];
+            $todayTotal   = 0.0;
+            $todayCount   = 0;
+            $monthlyTotal = 0.0;
+        }
+        $this->jsonResponse([
+            'data'          => $paginated['data'],
+            'page'          => $paginated['page'],
+            'pages'         => $paginated['pages'],
+            'total'         => $paginated['total'],
+            'today_total'   => $todayTotal,
+            'today_count'   => $todayCount,
+            'monthly_total' => $monthlyTotal,
+        ]);
+    }
+
     /** POST /api/sales */
     public function store(): void
     {

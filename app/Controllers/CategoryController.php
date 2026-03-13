@@ -21,6 +21,13 @@ class CategoryController extends Controller
         ]);
     }
 
+    /** GET /api/categories — JSON for mobile */
+    public function indexApi(): void
+    {
+        AuthHelper::requireAuth();
+        $this->jsonResponse(['data' => Category::all()]);
+    }
+
     public function create(): void
     {
         AuthHelper::requireRole('admin');

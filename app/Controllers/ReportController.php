@@ -41,6 +41,58 @@ class ReportController extends Controller
         ];
     }
 
+    /** GET /api/reports/data — JSON for mobile (admin only) */
+    public function indexApi(): void
+    {
+        AuthHelper::requireRole('admin');
+
+        $from = self::parseDate((string) ($_GET['from'] ?? '')) ?? date('Y-m-d', strtotime('-30 days'));
+        $to   = self::parseDate((string) ($_GET['to']   ?? '')) ?? date('Y-m-d');
+        if ($from > $to) { [$from, $to] = [$to, $from]; }
+
+        $db      = Database::getInstance();
+        $isPgsql = $db->getDriver() === 'pgsql';
+        $dw      = self::dateClause($isPgsql, $from, $to);
+        $dayCol  = $isPgsql ? "(s.created_at::date)" : "DATE(s.created_at)";
+
+        $salesByDay = $db->query(
+            "SELECT {$dayCol} AS day, SUM(s.total) AS total, COUNT(*) AS count
+               FROM sales s WHERE s.status = 'paid' AND {$dw['sql']}
+              GROUP BY {$dayCol} ORDER BY day DESC",
+            $dw['params']
+        )->fetchAll();
+
+        $topProducts = $db->query(
+            "SELECT p.name, SUM(si.quantity) AS qty_sold, SUM(si.total) AS revenue
+               FROM sale_items si JOIN products p ON si.product_id = p.id
+               JOIN sales s ON si.sale_id = s.id
+              WHERE s.status = 'paid' AND {$dw['sql']}
+              GROUP BY si.product_id, p.name ORDER BY qty_sold DESC LIMIT 10",
+            $dw['params']
+        )->fetchAll();
+
+        $profitRow = null;
+        try {
+            $profitRow = $db->query(
+                "SELECT SUM(si.quantity * si.unit_price) AS total_revenue,
+                        SUM(si.quantity * p.cost) AS total_cost,
+                        SUM(si.quantity * (si.unit_price - p.cost)) AS gross_profit
+                   FROM sale_items si JOIN products p ON si.product_id = p.id
+                   JOIN sales s ON si.sale_id = s.id
+                  WHERE s.status = 'paid' AND {$dw['sql']}",
+                $dw['params']
+            )->fetch();
+        } catch (\PDOException $e) {}
+
+        $this->jsonResponse([
+            'sales_by_day'   => $salesByDay,
+            'top_products'   => $topProducts,
+            'profit'         => $profitRow ?: ['total_revenue' => 0, 'total_cost' => 0, 'gross_profit' => 0],
+            'date_from'      => $from,
+            'date_to'        => $to,
+        ]);
+    }
+
     public function index(): void
     {
         AuthHelper::requireRole('admin');

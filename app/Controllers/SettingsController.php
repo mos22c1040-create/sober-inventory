@@ -23,6 +23,14 @@ class SettingsController extends Controller
         ]);
     }
 
+    /** GET /api/settings/data — JSON for mobile (admin only) */
+    public function getApi(): void
+    {
+        AuthHelper::requireRole('admin');
+        $settings = (array) include BASE_PATH . '/config/app_settings.php';
+        $this->jsonResponse(['data' => $settings]);
+    }
+
     public function store(): void
     {
         AuthHelper::requireRole('admin');

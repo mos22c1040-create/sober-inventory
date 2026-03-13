@@ -24,6 +24,13 @@ class PurchaseController extends Controller
         ]);
     }
 
+    /** GET /api/purchases/list — JSON for mobile (admin only) */
+    public function indexApi(): void
+    {
+        AuthHelper::requireRole('admin');
+        $this->jsonResponse(['data' => Purchase::all()]);
+    }
+
     public function create(): void
     {
         AuthHelper::requireRole('admin');

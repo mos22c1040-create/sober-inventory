@@ -40,6 +40,13 @@ class UserController extends Controller
         ]);
     }
 
+    /** GET /api/users/list — JSON for mobile (admin only) */
+    public function indexApi(): void
+    {
+        AuthHelper::requireRole('admin');
+        $this->jsonResponse(['data' => User::all()]);
+    }
+
     // -------------------------------------------------------------------------
     // GET /users/create
     // -------------------------------------------------------------------------
