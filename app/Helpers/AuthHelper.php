@@ -36,15 +36,17 @@ class AuthHelper
             ini_set('session.use_only_cookies', '1');
             $isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '') === 'production';
             // Flutter Web من localhost يحتاج SameSite=None حتى يُرسل كوكي الجلسة للـ API على دومين آخر
+            // يكفي وجود SESSION_CROSS_ORIGIN=1 بغض النظر عن APP_ENV لأن Railway دائماً يستخدم HTTPS
             $crossOrigin = (($_ENV['SESSION_CROSS_ORIGIN'] ?? getenv('SESSION_CROSS_ORIGIN') ?: '') === '1');
-            if ($crossOrigin && $isProduction) {
+            if ($crossOrigin) {
+                // SameSite=None يتطلب Secure=true — Railway يعمل على HTTPS دائماً
                 ini_set('session.cookie_samesite', 'None');
                 ini_set('session.cookie_secure', '1');
-            } else {
+            } elseif ($isProduction) {
                 ini_set('session.cookie_samesite', 'Strict');
-                if ($isProduction) {
-                    ini_set('session.cookie_secure', '1');
-                }
+                ini_set('session.cookie_secure', '1');
+            } else {
+                ini_set('session.cookie_samesite', 'Lax');
             }
             session_start();
         }
