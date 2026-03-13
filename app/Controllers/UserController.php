@@ -87,8 +87,9 @@ class UserController extends Controller
 
         // Password required on create
         $password = trim((string) ($input['password'] ?? ''));
-        if (strlen($password) < 8) {
-            $this->jsonResponse(['error' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.'], 422);
+        $passwordError = $this->validatePassword($password);
+        if ($passwordError) {
+            $this->jsonResponse(['error' => $passwordError], 422);
         }
 
         // Unique email check
@@ -213,6 +214,11 @@ class UserController extends Controller
             $this->jsonResponse(['error' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.'], 422);
         }
 
+        $passwordError = $this->validatePassword($password);
+        if ($passwordError) {
+            $this->jsonResponse(['error' => $passwordError], 422);
+        }
+
         if ($password !== $confirm) {
             $this->jsonResponse(['error' => 'كلمة المرور وتأكيدها غير متطابقين.'], 422);
         }
@@ -317,5 +323,31 @@ class UserController extends Controller
             'role'     => $role,
             'status'   => $status,
         ], null];
+    }
+
+    /**
+     * Validate password strength.
+     *
+     * Requirements: minimum 8 characters, at least one uppercase letter,
+     * at least one number.
+     *
+     * @param  string $password
+     * @return string|null Error message or null if valid
+     */
+    private function validatePassword(string $password): ?string
+    {
+        if (strlen($password) < 8) {
+            return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.';
+        }
+
+        if (!preg_match('/[A-Z]/', $password)) {
+            return 'كلمة المرور يجب أن تحتوي على حرف واحد كبير على الأقل.';
+        }
+
+        if (!preg_match('/[0-9]/', $password)) {
+            return 'كلمة المرور يجب أن تحتوي على رقم واحد على الأقل.';
+        }
+
+        return null;
     }
 }

@@ -44,7 +44,7 @@ class Product
 
         $stmt = $db->query($sql);
 
-        return $stmt->fetchAll();
+        return self::castProductTypes($stmt->fetchAll());
     }
 
     /** Total product count (avoids loading all rows just to count). */
@@ -79,7 +79,7 @@ class Product
         );
 
         return [
-            'data'    => $stmt->fetchAll(),
+            'data'    => self::castProductTypes($stmt->fetchAll()),
             'total'   => $total,
             'page'    => $page,
             'perPage' => $perPage,
@@ -143,7 +143,7 @@ class Product
         );
 
         return [
-            'data'    => $stmt->fetchAll(),
+            'data'    => self::castProductTypes($stmt->fetchAll()),
             'total'   => $total,
             'page'    => $page,
             'perPage' => $perPage,
@@ -159,7 +159,10 @@ class Product
             [':id' => $id]
         );
         $row = $stmt->fetch();
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+        return self::castProductTypes([$row])[0] ?? null;
     }
 
     /** Find product by SKU / barcode (exact match). */
@@ -175,7 +178,10 @@ class Product
             [':sku' => $sku]
         );
         $row = $stmt->fetch();
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+        return self::castProductTypes([$row])[0] ?? null;
     }
 
     public static function create(array $data): int
@@ -281,7 +287,7 @@ class Product
             );
         }
 
-        return $stmt->fetchAll();
+        return self::castProductTypesMinimal($stmt->fetchAll());
     }
 
     /** البحث عن منتج بالاسم أو الرمز (SKU) — للأوتوكومبليت. */
@@ -302,7 +308,7 @@ class Product
               ORDER BY p.name ASC LIMIT {$limitInt}",
             [':like' => $like, ':like2' => $like]
         );
-        return $stmt->fetchAll();
+        return self::castProductTypesMinimal($stmt->fetchAll());
     }
 
     public static function countLowStock(): int
@@ -330,6 +336,56 @@ class Product
              ORDER BY quantity ASC
              LIMIT " . (int) $limit
         );
-        return $stmt->fetchAll();
+        return self::castProductTypesMinimal($stmt->fetchAll());
+    }
+
+    /**
+     * Cast numeric fields to proper PHP types for Flutter/JSON compatibility.
+     * Ensures json_encode outputs actual numbers, not numeric strings.
+     *
+     * @param array $products
+     * @return array
+     */
+    private static function castProductTypes(array $products): array
+    {
+        return array_map(function (array $p) {
+            return [
+                'id'                  => isset($p['id']) ? (int) $p['id'] : 0,
+                'category_id'          => isset($p['category_id']) && $p['category_id'] !== null ? (int) $p['category_id'] : null,
+                'type_id'              => isset($p['type_id']) && $p['type_id'] !== null ? (int) $p['type_id'] : null,
+                'name'                 => $p['name'] ?? '',
+                'sku'                  => $p['sku'] ?? null,
+                'price'                => isset($p['price']) ? (float) $p['price'] : 0.0,
+                'cost'                => isset($p['cost']) ? (float) $p['cost'] : 0.0,
+                'quantity'            => isset($p['quantity']) ? (int) $p['quantity'] : 0,
+                'low_stock_threshold' => isset($p['low_stock_threshold']) ? (int) $p['low_stock_threshold'] : 5,
+                'unit'                => $p['unit'] ?? 'قطعة',
+                'description'         => $p['description'] ?? null,
+                'created_at'          => $p['created_at'] ?? null,
+                'updated_at'          => $p['updated_at'] ?? null,
+                'category_name'       => $p['category_name'] ?? null,
+                'type_name'           => $p['type_name'] ?? null,
+            ];
+        }, $products);
+    }
+
+    /**
+     * Cast minimal product fields (for POS, search, low-stock).
+     *
+     * @param array $products
+     * @return array
+     */
+    private static function castProductTypesMinimal(array $products): array
+    {
+        return array_map(function (array $p) {
+            return [
+                'id'                  => isset($p['id']) ? (int) $p['id'] : 0,
+                'name'                 => $p['name'] ?? '',
+                'sku'                  => $p['sku'] ?? null,
+                'price'                => isset($p['price']) ? (float) $p['price'] : 0.0,
+                'quantity'            => isset($p['quantity']) ? (int) $p['quantity'] : 0,
+                'low_stock_threshold' => isset($p['low_stock_threshold']) ? (int) $p['low_stock_threshold'] : 5,
+            ];
+        }, $products);
     }
 }

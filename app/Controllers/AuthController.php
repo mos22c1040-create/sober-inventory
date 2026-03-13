@@ -139,20 +139,23 @@ class AuthController extends Controller
             }
 
             // session_regenerate_id(true) can fail with PgBouncer/pooler session handlers
+            // Full session flush: backup essential data, destroy, start new, restore
+            $userId = (int) $user['id'];
+            $username = (string) $user['username'];
+            $email = (string) $user['email'];
+            $role = (string) $user['role'];
+
             try {
                 session_regenerate_id(true);
             } catch (\Throwable $e) {
-                $oldData = $_SESSION;
-                session_destroy();
-                session_start();
-                $_SESSION = $oldData;
+                $this->flushAndRestoreSession($userId, $username, $email, $role);
             }
 
-            $_SESSION['user_id']       = (int)    $user['id'];
-            $_SESSION['username']      = (string) $user['username'];
-            $_SESSION['name']          = (string) $user['username'];
-            $_SESSION['email']         = (string) $user['email'];
-            $_SESSION['role']          = (string) $user['role'];
+            $_SESSION['user_id']       = $userId;
+            $_SESSION['username']      = $username;
+            $_SESSION['name']          = $username;
+            $_SESSION['email']         = $email;
+            $_SESSION['role']          = $role;
             $_SESSION['last_activity'] = time();
 
             unset($_SESSION['csrf_token']);
@@ -296,5 +299,28 @@ class AuthController extends Controller
 
         header('Location: /login');
         exit;
+    }
+
+    /**
+     * Flush and restore session - fully destroys stale session and starts fresh.
+     * Used when session_regenerate_id() fails due to pooler/handler issues.
+     *
+     * @param int    $userId
+     * @param string $username
+     * @param string $email
+     * @param string $role
+     */
+    private function flushAndRestoreSession(int $userId, string $username, string $email, string $role): void
+    {
+        session_destroy();
+        session_start();
+        $_SESSION = [
+            'user_id'       => $userId,
+            'username'      => $username,
+            'name'          => $username,
+            'email'         => $email,
+            'role'          => $role,
+            'last_activity' => time(),
+        ];
     }
 }

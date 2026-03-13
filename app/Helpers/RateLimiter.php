@@ -4,34 +4,21 @@ declare(strict_types=1);
 
 namespace App\Helpers;
 
+use App\Core\Database;
+
 /**
- * RateLimiter — file-based sliding-window rate limiter.
+ * RateLimiter — database-backed sliding-window rate limiter.
  *
- * Stores attempt timestamps in /storage/rate_limits/ (one JSON file per key).
- * Zero external dependencies — works on any PHP 7.4+ setup.
+ * Works on serverless platforms (Vercel/Railway) where filesystem is ephemeral.
+ * Assumes a `rate_limits` table exists with columns: key_hash, timestamp.
  *
  * Usage:
- *   if (!RateLimiter::attempt('login_' . $ip, 5, 900)) {
+ *   if (!RateLimiter::attempt('login_127.0.0.1', 5, 900)) {
  *       // too many attempts
  *   }
  */
 class RateLimiter
 {
-    private static string $storageDir = '';
-
-    private static function dir(): string
-    {
-        if (self::$storageDir === '') {
-            self::$storageDir = defined('BASE_PATH')
-                ? BASE_PATH . '/storage/rate_limits'
-                : sys_get_temp_dir() . '/sober_rate_limits';
-        }
-        if (!is_dir(self::$storageDir)) {
-            @mkdir(self::$storageDir, 0700, true);
-        }
-        return self::$storageDir;
-    }
-
     /**
      * Record one attempt and check if the limit is exceeded.
      *
@@ -42,39 +29,42 @@ class RateLimiter
      */
     public static function attempt(string $key, int $maxAttempts = 5, int $windowSeconds = 900): bool
     {
-        $file = self::dir() . '/' . md5($key) . '.json';
-        $now  = time();
-
-        // Load existing timestamps
-        $timestamps = [];
-        if (is_file($file)) {
-            $raw = @file_get_contents($file);
-            if ($raw !== false) {
-                $decoded = json_decode($raw, true);
-                if (is_array($decoded)) {
-                    $timestamps = $decoded;
-                }
-            }
-        }
-
-        // Remove expired entries (outside the sliding window)
+        $db = Database::getInstance();
+        $keyHash = md5($key);
+        $now = time();
         $windowStart = $now - $windowSeconds;
-        $timestamps  = array_values(array_filter(
-            $timestamps,
-            static fn(int $ts) => $ts > $windowStart
-        ));
 
-        // Check before adding the new attempt
-        if (count($timestamps) >= $maxAttempts) {
-            // Still persist cleaned list (but don't add the new attempt)
-            @file_put_contents($file, json_encode($timestamps), LOCK_EX);
-            return false;
+        $db->beginTransaction();
+
+        try {
+            $db->query(
+                "DELETE FROM rate_limits WHERE key_hash = :key_hash AND timestamp < :window_start",
+                [':key_hash' => $keyHash, ':window_start' => $windowStart]
+            );
+
+            $stmt = $db->query(
+                "SELECT COUNT(*) AS cnt FROM rate_limits WHERE key_hash = :key_hash",
+                [':key_hash' => $keyHash]
+            );
+            $count = (int) ($stmt->fetch()['cnt'] ?? 0);
+
+            if ($count >= $maxAttempts) {
+                $db->rollBack();
+                return false;
+            }
+
+            $db->query(
+                "INSERT INTO rate_limits (key_hash, timestamp) VALUES (:key_hash, :timestamp)",
+                [':key_hash' => $keyHash, ':timestamp' => $now]
+            );
+
+            $db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $db->rollBack();
+            error_log('[RateLimiter] Database error: ' . $e->getMessage());
+            return true;
         }
-
-        // Record this attempt
-        $timestamps[] = $now;
-        @file_put_contents($file, json_encode($timestamps), LOCK_EX);
-        return true;
     }
 
     /**
@@ -87,21 +77,26 @@ class RateLimiter
      */
     public static function retryAfter(string $key, int $windowSeconds = 900): int
     {
-        $file = self::dir() . '/' . md5($key) . '.json';
-        if (!is_file($file)) {
+        try {
+            $db = Database::getInstance();
+            $keyHash = md5($key);
+
+            $stmt = $db->query(
+                "SELECT MIN(timestamp) AS oldest FROM rate_limits WHERE key_hash = :key_hash",
+                [':key_hash' => $keyHash]
+            );
+            $row = $stmt->fetch();
+
+            if (!$row || empty($row['oldest'])) {
+                return 0;
+            }
+
+            $oldest = (int) $row['oldest'];
+            $retry = ($oldest + $windowSeconds) - time();
+            return max(0, $retry);
+        } catch (\Exception $e) {
             return 0;
         }
-        $raw  = @file_get_contents($file);
-        if ($raw === false) {
-            return 0;
-        }
-        $timestamps = json_decode($raw, true);
-        if (!is_array($timestamps) || empty($timestamps)) {
-            return 0;
-        }
-        $oldest = min($timestamps);
-        $retry  = ($oldest + $windowSeconds) - time();
-        return max(0, $retry);
     }
 
     /**
@@ -109,7 +104,12 @@ class RateLimiter
      */
     public static function clear(string $key): void
     {
-        $file = self::dir() . '/' . md5($key) . '.json';
-        @unlink($file);
+        try {
+            $db = Database::getInstance();
+            $keyHash = md5($key);
+            $db->query("DELETE FROM rate_limits WHERE key_hash = :key_hash", [':key_hash' => $keyHash]);
+        } catch (\Exception $e) {
+            error_log('[RateLimiter] Clear error: ' . $e->getMessage());
+        }
     }
 }

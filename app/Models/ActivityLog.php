@@ -38,8 +38,7 @@ class ActivityLog
                 ]
             );
         } catch (PDOException $e) {
-            // Table may not exist yet (run storage/patch_activity_log.sql)
-            // Don't crash the app; just skip logging
+            error_log('[ActivityLog] Failed to log: ' . $e->getMessage());
         }
     }
 
@@ -57,6 +56,7 @@ class ActivityLog
             );
             return $stmt->fetchAll();
         } catch (PDOException $e) {
+            error_log('[ActivityLog] Failed to fetch recent: ' . $e->getMessage());
             return [];
         }
     }

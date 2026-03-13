@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Helpers\AuthHelper;
 use App\Helpers\FileCache;
+use App\Helpers\RateLimiter;
 use App\Helpers\Security;
 use App\Models\Sale;
 use App\Models\Product;
@@ -143,6 +144,16 @@ class SaleController extends Controller
         AuthHelper::requireAuth();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
+        }
+
+        $userId = (int) $_SESSION['user_id'];
+        $rateLimitKey = "sale_create_{$userId}";
+        if (!RateLimiter::attempt($rateLimitKey, 20, 60)) {
+            $wait = RateLimiter::retryAfter($rateLimitKey, 60);
+            $this->jsonResponse([
+                'error' => 'طلبات كثيرة جداً. انتظر ' . ceil($wait) . ' ثانية قبل المحاولة مجدداً.'
+            ], 429);
+            return;
         }
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];

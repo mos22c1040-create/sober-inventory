@@ -169,7 +169,11 @@ class ProductController extends Controller
         if (!$id) {
             $this->jsonResponse(['error' => 'Invalid ID'], 400);
         }
-        $name = Product::find($id)['name'] ?? '';
+        $product = Product::find($id);
+        if (!$product) {
+            $this->jsonResponse(['error' => 'Product not found'], 404);
+        }
+        $name = $product['name'] ?? '';
         Product::delete($id);
         ActivityLog::log('product.delete', 'product', $id, $name);
         FileCache::delete('dashboard_product_count');
@@ -182,11 +186,11 @@ class ProductController extends Controller
         AuthHelper::requireAuth();
         $q = trim((string) ($_GET['q'] ?? ''));
         if (strlen($q) < 1) {
-            $this->jsonResponse([]);
+            $this->jsonResponse(['data' => []]);
             return;
         }
         $results = Product::search($q, 12);
-        $this->jsonResponse($results);
+        $this->jsonResponse(['data' => $results]);
     }
 
     /** GET /api/products/barcode?sku=xxx — find product by SKU/barcode for scanner. */

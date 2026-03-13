@@ -27,8 +27,8 @@ class SaleService
     {
         $items = $data['items'] ?? [];
         $customerName = $data['customer_name'] ?? 'عميل نقدي';
-        $paymentMethod = in_array($data['payment_method'] ?? '', ['cash', 'card', 'mixed']) 
-            ? $data['payment_method'] 
+        $paymentMethod = in_array($data['payment_method'] ?? '', ['cash', 'card', 'mixed'])
+            ? $data['payment_method']
             : 'cash';
         $discount = max(0.0, (float) ($data['discount'] ?? 0));
         $notes = $data['notes'] ?? '';
@@ -39,13 +39,14 @@ class SaleService
 
         $validItems = $this->validateAndPrepareItems($items);
 
-        $invoiceNumber = $this->generateInvoiceNumber();
         $subtotal = array_sum(array_column($validItems, 'total'));
         $total = max(0, $subtotal - $discount);
 
         $this->db->beginTransaction();
 
         try {
+            $invoiceNumber = $this->generateInvoiceNumberLocked();
+
             $this->db->query(
                 "INSERT INTO sales (user_id, invoice_number, customer_name, total, discount, notes, payment_method, status)
                  VALUES (:user_id, :invoice_number, :customer_name, :total, :discount, :notes, :payment_method, 'paid')",
@@ -75,7 +76,7 @@ class SaleService
                     ]
                 );
 
-                $this->decrementStock($item['product_id'], $item['quantity']);
+                $this->decrementStockWithLock($item['product_id'], $item['quantity']);
             }
 
             ActivityLog::log('sale.create', 'sale', $saleId, "فاتورة للعميل: $customerName", $userId);
@@ -91,8 +92,7 @@ class SaleService
 
     private function validateAndPrepareItems(array $items): array
     {
-        $validItems = [];
-
+        $productIds = [];
         foreach ($items as $item) {
             $productId = (int) ($item['product_id'] ?? 0);
             $qty = (int) ($item['quantity'] ?? 0);
@@ -101,14 +101,45 @@ class SaleService
                 throw new \InvalidArgumentException('بيانات المنتجات غير صالحة');
             }
 
-            $product = Product::find($productId);
-            if (!$product) {
+            $productIds[$productId] = $qty;
+        }
+
+        if (empty($productIds)) {
+            throw new \InvalidArgumentException('الفاتورة فارغة');
+        }
+
+        $placeholders = [];
+        $params = [];
+        $index = 0;
+        foreach (array_keys($productIds) as $id) {
+            $placeholders[] = ":pid{$index}";
+            $params[":pid{$index}"] = $id;
+            $index++;
+        }
+
+        $inClause = implode(',', $placeholders);
+        $stmt = $this->db->query(
+            "SELECT id, name, quantity, price FROM products WHERE id IN ($inClause)",
+            $params
+        );
+        $products = $stmt->fetchAll();
+        $productsById = [];
+        foreach ($products as $p) {
+            $productsById[(int) $p['id']] = $p;
+        }
+
+        $validItems = [];
+        foreach ($productIds as $productId => $qty) {
+            if (!isset($productsById[$productId])) {
                 throw new \InvalidArgumentException("المنتج رقم $productId غير موجود");
             }
 
-            if ($product['quantity'] < $qty) {
+            $product = $productsById[$productId];
+            $availableQty = (int) $product['quantity'];
+
+            if ($availableQty < $qty) {
                 throw new \InvalidArgumentException(
-                    "الكمية المتوفرة من {$product['name']} غير كافية (المتوفر: {$product['quantity']})"
+                    "الكمية المتوفرة من {$product['name']} غير كافية (المتوفر: {$availableQty})"
                 );
             }
 
@@ -124,7 +155,7 @@ class SaleService
         return $validItems;
     }
 
-    private function decrementStock(int $productId, int $qty): void
+    private function decrementStockWithLock(int $productId, int $qty): void
     {
         $stmt = $this->db->query(
             "UPDATE products SET quantity = quantity - :qty WHERE id = :id AND quantity >= :qty2",
@@ -132,15 +163,20 @@ class SaleService
         );
 
         if ($stmt->rowCount() === 0) {
-            throw new \RuntimeException("فشل في تحديث المخزون للمنتج رقم $productId");
+            $product = Product::find($productId);
+            $available = $product ? (int) $product['quantity'] : 0;
+            throw new \RuntimeException(
+                "المخزون غير كافٍ للمنتج رقم $productId (المتاح: $available)"
+            );
         }
     }
 
-    private function generateInvoiceNumber(): string
+    private function generateInvoiceNumberLocked(): string
     {
         $year = date('Y');
+
         $stmt = $this->db->query(
-            "SELECT invoice_number FROM sales WHERE invoice_number LIKE :prefix ORDER BY id DESC LIMIT 1",
+            "SELECT id, invoice_number FROM sales WHERE invoice_number LIKE :prefix ORDER BY id DESC LIMIT 1 FOR UPDATE",
             [':prefix' => "INV-{$year}-%"]
         );
         $row = $stmt->fetch();
