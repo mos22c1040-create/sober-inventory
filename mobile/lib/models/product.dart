@@ -1,9 +1,12 @@
+import '../utils/api_parse.dart';
+
 class Product {
   final int id;
   final String name;
   final String? sku;
   final double price;
   final int quantity;
+  final int? typeId;
 
   Product({
     required this.id,
@@ -11,15 +14,17 @@ class Product {
     this.sku,
     required this.price,
     required this.quantity,
+    this.typeId,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: (json['id'] ?? 0) as int,
-      name: (json['name'] ?? '') as String,
-      sku: json['sku'] as String?,
-      price: double.tryParse(json['price'].toString()) ?? 0,
-      quantity: (json['quantity'] ?? 0) as int,
+      id: toInt(json['id']),
+      name: (json['name'] ?? '').toString(),
+      sku: json['sku'] != null ? json['sku'].toString() : null,
+      price: toDouble(json['price']),
+      quantity: toInt(json['quantity']),
+      typeId: json['type_id'] != null ? toInt(json['type_id']) : null,
     );
   }
 }

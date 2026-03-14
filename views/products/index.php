@@ -44,6 +44,25 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 
 <div id="barcode-result" class="hidden mb-4 rounded-xl p-4 border text-sm font-medium" role="alert"></div>
 
+<?php
+$stockFilter = $stockFilter ?? 'all';
+$stockTabs = [
+    'all'       => ['label' => 'الكل', 'icon' => 'fa-list'],
+    'in_stock'  => ['label' => 'في المخزون', 'icon' => 'fa-check-circle'],
+    'low'       => ['label' => 'منخفض', 'icon' => 'fa-triangle-exclamation'],
+    'out'       => ['label' => 'نفد', 'icon' => 'fa-circle-xmark'],
+];
+?>
+<div class="flex flex-wrap gap-2 mb-4">
+    <?php foreach ($stockTabs as $key => $tab): ?>
+    <a href="<?= $bp ?>/products?stock=<?= $key ?>" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all <?= $stockFilter === $key ? 'text-white shadow-md' : '' ?>"
+       style="<?= $stockFilter === $key ? 'background: rgb(var(--primary)); color: rgb(var(--primary-foreground));' : 'background: rgb(var(--muted)); color: rgb(var(--muted-foreground)); border: 1px solid rgb(var(--border));' ?>">
+        <i class="fa-solid <?= $tab['icon'] ?>" aria-hidden="true"></i>
+        <?= $tab['label'] ?>
+    </a>
+    <?php endforeach; ?>
+</div>
+
 <div class="rounded-2xl border overflow-hidden" style="border-color: rgb(var(--border)); background: rgb(var(--card)); box-shadow: 0 2px 12px rgb(0 0 0 / 0.04);">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y" style="border-color: rgb(var(--border));">
@@ -52,6 +71,7 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
                     <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">المنتج</th>
                     <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">الرمز (SKU)</th>
                     <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">التصنيف</th>
+                    <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">النوع</th>
                     <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">السعر</th>
                     <th class="px-6 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">المخزون</th>
                     <?php if ($isAdmin): ?><th class="px-6 py-3.5 text-center text-[11px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">إجراءات</th><?php endif; ?>
@@ -85,6 +105,11 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
                     <td class="px-6 py-3.5">
                         <?php if (!empty($p['category_name'])): ?>
                         <span class="badge badge-neutral"><?= htmlspecialchars($p['category_name'], ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php else: ?><span class="text-xs" style="color: rgb(var(--muted-foreground));">—</span><?php endif; ?>
+                    </td>
+                    <td class="px-6 py-3.5">
+                        <?php if (!empty($p['type_name'])): ?>
+                        <span class="text-xs font-medium" style="color: rgb(var(--muted-foreground));"><?= htmlspecialchars($p['type_name'], ENT_QUOTES, 'UTF-8') ?></span>
                         <?php else: ?><span class="text-xs" style="color: rgb(var(--muted-foreground));">—</span><?php endif; ?>
                     </td>
                     <td class="px-6 py-3.5">
@@ -124,6 +149,9 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
     </div>
 </div>
 
+<?php
+$pageQs = ($stockFilter !== 'all') ? 'stock=' . htmlspecialchars($stockFilter, ENT_QUOTES, 'UTF-8') . '&' : '';
+?>
 <?php if (($pagination['pages'] ?? 1) > 1): ?>
 <div class="flex items-center justify-between mt-4 px-1">
     <p class="text-sm text-slate-500">
@@ -131,19 +159,19 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
     </p>
     <div class="flex items-center gap-1">
         <?php if ($pagination['page'] > 1): ?>
-        <a href="?page=<?= $pagination['page'] - 1 ?>"
+        <a href="?<?= $pageQs ?>page=<?= $pagination['page'] - 1 ?>"
            class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-slate-600">
             <i class="fa-solid fa-chevron-right text-xs"></i>
         </a>
         <?php endif; ?>
         <?php for ($pg = max(1, $pagination['page'] - 2); $pg <= min($pagination['pages'], $pagination['page'] + 2); $pg++): ?>
-        <a href="?page=<?= $pg ?>"
+        <a href="?<?= $pageQs ?>page=<?= $pg ?>"
            class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors <?= $pg === $pagination['page'] ? 'bg-blue-600 text-white shadow-sm' : 'border border-slate-200 hover:bg-slate-50 text-slate-600' ?>">
             <?= $pg ?>
         </a>
         <?php endfor; ?>
         <?php if ($pagination['page'] < $pagination['pages']): ?>
-        <a href="?page=<?= $pagination['page'] + 1 ?>"
+        <a href="?<?= $pageQs ?>page=<?= $pagination['page'] + 1 ?>"
            class="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-slate-600">
             <i class="fa-solid fa-chevron-left text-xs"></i>
         </a>

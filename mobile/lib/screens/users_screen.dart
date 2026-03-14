@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
+import '../utils/api_parse.dart';
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key, required this.api});
@@ -203,7 +204,7 @@ class _UsersScreenState extends State<UsersScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   GestureDetector(
-                                    onTap: () => _delete((u['id'] as int?) ?? 0, name),
+                                    onTap: () => _delete(toInt(u['id']), name),
                                     child: Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(color: AppColors.errorBg, borderRadius: BorderRadius.circular(6)),

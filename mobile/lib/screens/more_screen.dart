@@ -6,10 +6,14 @@ import 'expenses_screen.dart';
 import 'purchases_screen.dart';
 import 'reports_screen.dart';
 import 'categories_screen.dart';
+import 'types_screen.dart';
 import 'users_screen.dart';
 import 'settings_screen.dart';
 import 'activity_log_screen.dart';
 import 'products_screen.dart';
+import 'pnl_dashboard_screen.dart';
+import 'return_screen.dart';
+import 'purchase_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key, required this.api});
@@ -98,7 +102,7 @@ class MoreScreen extends StatelessWidget {
         subtitle: 'استلام البضاعة',
         color: const Color(0xFF7C3AED),
         bg: const Color(0xFFF0EBFF),
-        onTap: () => _push(context, PurchasesScreen(api: api)),
+        onTap: () => _push(context, PurchaseScreen(api: api)),
         adminOnly: true,
       ),
       _MenuItem(
@@ -111,12 +115,37 @@ class MoreScreen extends StatelessWidget {
         adminOnly: true,
       ),
       _MenuItem(
+        icon: Icons.analytics_rounded,
+        label: 'التقرير المالي',
+        subtitle: 'الأرباح والخسائر',
+        color: const Color(0xFF059669),
+        bg: const Color(0xFFD1FAE5),
+        onTap: () => _push(context, PnLDashboardScreen(api: api)),
+        adminOnly: true,
+      ),
+      _MenuItem(
+        icon: Icons.undo_rounded,
+        label: 'إرجاع المنتجات',
+        subtitle: 'استرجاع البضاعة',
+        color: const Color(0xFFDC2626),
+        bg: const Color(0xFFFEE2E2),
+        onTap: () => _push(context, ReturnScreen(api: api)),
+      ),
+      _MenuItem(
         icon: Icons.category_rounded,
         label: 'التصنيفات',
         subtitle: 'تصنيفات المنتجات',
         color: AppColors.accent,
         bg: AppColors.warningBg,
         onTap: () => _push(context, CategoriesScreen(api: api)),
+      ),
+      _MenuItem(
+        icon: Icons.layers_rounded,
+        label: 'الأنواع',
+        subtitle: 'أنواع المنتجات',
+        color: const Color(0xFF0D9488),
+        bg: const Color(0xFFCCFBF1),
+        onTap: () => _push(context, TypesScreen(api: api)),
       ),
       _MenuItem(
         icon: Icons.inventory_2_rounded,

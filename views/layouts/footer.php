@@ -32,6 +32,25 @@
             sidebar.querySelectorAll('a').forEach(function(a) { a.addEventListener('click', closeMenu); });
         }
     })();
+    (function() {
+        var root = document.documentElement;
+        var btn = document.getElementById('theme-toggle');
+        var icon = document.getElementById('theme-icon');
+        function setIcon() {
+            if (!icon) return;
+            var dark = root.getAttribute('data-theme') === 'dark';
+            icon.className = 'fa-solid text-sm ' + (dark ? 'fa-sun' : 'fa-moon');
+        }
+        if (btn) {
+            btn.addEventListener('click', function() {
+                var dark = root.getAttribute('data-theme') === 'dark';
+                root.setAttribute('data-theme', dark ? 'light' : 'dark');
+                try { localStorage.setItem('sober-theme', dark ? 'light' : 'dark'); } catch (e) {}
+                setIcon();
+            });
+        }
+        setIcon();
+    })();
     </script>
 </body>
 </html>

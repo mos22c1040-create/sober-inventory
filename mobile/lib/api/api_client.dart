@@ -198,6 +198,25 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data ?? {});
   }
 
+  Future<Map<String, dynamic>> getSaleDetails(int saleId) async {
+    final r = await _dio.get<Map<String, dynamic>>(
+      '/api/sales/details',
+      queryParameters: {'id': saleId},
+    );
+    return _d(r.data);
+  }
+
+  // ── Returns ────────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> submitReturn(Map<String, dynamic> payload) async {
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/api/returns',
+      data: payload,
+      options: Options(contentType: Headers.jsonContentType),
+    );
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
   // ── Categories ───────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getCategories() async {
@@ -376,6 +395,32 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data ?? {});
   }
 
+  Future<Map<String, dynamic>> submitPurchase({
+    required List<Map<String, dynamic>> items,
+    String supplier = '',
+  }) async {
+    final csrfToken = await getCsrfToken();
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/api/purchases',
+      data: {
+        'items': items,
+        'supplier': supplier,
+        'csrf_token': csrfToken,
+      },
+      options: Options(contentType: Headers.jsonContentType),
+    );
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  Future<String> getCsrfToken() async {
+    try {
+      final me = await getMe();
+      return me['csrf_token'] ?? '';
+    } catch (e) {
+      return '';
+    }
+  }
+
   // ── Reports ──────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getReports({String? from, String? to}) async {
@@ -384,6 +429,17 @@ class ApiClient {
       queryParameters: {
         if (from != null) 'from': from,
         if (to != null) 'to': to,
+      },
+    );
+    return _d(r.data);
+  }
+
+  Future<Map<String, dynamic>> fetchPnL({String? startDate, String? endDate}) async {
+    final r = await _dio.get<Map<String, dynamic>>(
+      '/api/reports/pnl',
+      queryParameters: {
+        if (startDate != null) 'start_date': startDate,
+        if (endDate != null) 'end_date': endDate,
       },
     );
     return _d(r.data);

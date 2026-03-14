@@ -226,4 +226,49 @@ $exportQs = '?from=' . $from . '&to=' . $to;
     <?php endif; ?>
 </div>
 
+<?php
+$lowStockList = $lowStockProducts ?? [];
+?>
+<?php if (!empty($lowStockList)): ?>
+<!-- تنبيهات المخزون — منتجات تحتاج إعادة تخزين -->
+<div class="app-card-flat p-6 mt-6" style="border-color: rgb(254 202 202);">
+    <h4 class="text-base font-bold mb-4" style="color: rgb(var(--foreground));">
+        <i class="fa-solid fa-triangle-exclamation me-2" style="color: rgb(var(--color-danger));" aria-hidden="true"></i>
+        تنبيهات المخزون
+    </h4>
+    <p class="text-sm mb-4" style="color: rgb(var(--muted-foreground));">منتجات وصلت لحد التنبيه أو أقل — تحتاج إعادة تخزين.</p>
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead>
+                <tr style="border-bottom: 1px solid rgb(var(--border));">
+                    <th class="text-right py-2.5 px-3 font-semibold" style="color: rgb(var(--muted-foreground));">المنتج</th>
+                    <th class="text-center py-2.5 px-3 font-semibold" style="color: rgb(var(--muted-foreground));">الكمية الحالية</th>
+                    <th class="text-center py-2.5 px-3 font-semibold" style="color: rgb(var(--muted-foreground));">حد التنبيه</th>
+                    <th class="text-left py-2.5 px-3 font-semibold" style="color: rgb(var(--muted-foreground));">السعر</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($lowStockList as $p): ?>
+            <tr class="app-table-row" style="border-bottom: 1px solid rgb(var(--border));">
+                <td class="py-3 px-3 font-medium" style="color: rgb(var(--foreground));"><?= htmlspecialchars($p['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
+                <td class="py-3 px-3 text-center">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold" style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));"><?= (int)($p['quantity'] ?? 0) ?></span>
+                </td>
+                <td class="py-3 px-3 text-center" style="color: rgb(var(--muted-foreground));"><?= (int)($p['low_stock_threshold'] ?? 0) ?></td>
+                <td class="py-3 px-3 text-left font-semibold" style="color: rgb(var(--foreground));"><?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($p['price'] ?? 0), 0) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-4">
+        <a href="<?= $bp ?>/products" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+           style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
+            <i class="fa-solid fa-boxes-stacked text-xs" aria-hidden="true"></i>
+            الذهاب إلى المنتجات
+        </a>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php require BASE_PATH . '/views/layouts/footer.php'; ?>

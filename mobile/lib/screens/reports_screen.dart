@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
+import '../utils/api_parse.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key, required this.api});
@@ -14,6 +15,7 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   bool _loading = true;
   Map<String, dynamic> _data = {};
+  List<Map<String, dynamic>> _lowStockProducts = [];
   DateTime _from = DateTime.now().subtract(const Duration(days: 30));
   DateTime _to = DateTime.now();
 
@@ -30,7 +32,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
         from: _from.toIso8601String().substring(0, 10),
         to: _to.toIso8601String().substring(0, 10),
       );
-      if (mounted) setState(() => _data = r);
+      final lowStock = await widget.api.getLowStockProducts(limit: 30);
+      if (mounted) {
+        setState(() {
+          _data = r;
+          _lowStockProducts = lowStock;
+        });
+      }
     } catch (_) {} finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -45,9 +53,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final profit = _data['profit'] as Map? ?? {};
-    final revenue = ((profit['total_revenue'] as num?)?.toDouble() ?? 0.0);
-    final cost = ((profit['total_cost'] as num?)?.toDouble() ?? 0.0);
-    final gross = ((profit['gross_profit'] as num?)?.toDouble() ?? 0.0);
+    final revenue = toDouble(profit['total_revenue']);
+    final cost = toDouble(profit['total_cost']);
+    final gross = toDouble(profit['gross_profit']);
     final topProducts = _data['top_products'] as List? ?? [];
     final salesByDay = _data['sales_by_day'] as List? ?? [];
 
@@ -150,7 +158,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '${_fmt(((mp['revenue'] as num?)?.toDouble() ?? 0))} د.ع',
+                                  '${_fmt(toDouble(mp['revenue']))} د.ع',
                                   style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
                                 ),
                               ],
@@ -174,9 +182,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           child: Column(
                             children: salesByDay.take(15).map((d) {
                               final md = d as Map;
-                              final t = ((md['total'] as num?)?.toDouble() ?? 0.0);
+                              final t = toDouble(md['total']);
                               final maxT = (salesByDay as List).fold<double>(1.0, (m, e) {
-                                final v = ((e as Map)['total'] as num?)?.toDouble() ?? 0;
+                                final v = toDouble((e as Map)['total']);
                                 return v > m ? v : m;
                               });
                               return Padding(
@@ -216,6 +224,77 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             }).toList(),
                           ),
                         ),
+                      ],
+
+                      // تقرير المخزون المنخفض
+                      if (_lowStockProducts.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        _section('تنبيهات المخزون — منتجات تحتاج إعادة تخزين', Icons.warning_amber_rounded),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.warningBg,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                          ),
+                          child: Column(
+                            children: _lowStockProducts.take(15).map((p) {
+                              final qty = toInt(p['quantity']);
+                              final thresh = toInt(p['low_stock_threshold']);
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.warning.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(Icons.inventory_2_outlined, color: AppColors.warning, size: 18),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            (p['name'] ?? '').toString(),
+                                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                          ),
+                                          Text(
+                                            'الكمية: $qty / الحد: $thresh',
+                                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.warning.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '$qty',
+                                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.warning),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        if (_lowStockProducts.length > 15)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              '+${_lowStockProducts.length - 15} منتج آخر',
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                          ),
                       ],
                     ],
                   ),

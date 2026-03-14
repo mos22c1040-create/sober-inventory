@@ -1,28 +1,35 @@
 <?php
+
 namespace App\Core;
 
 class Router {
     protected $routes = [];
 
-    public function add($method, $uri, $controllerAction) {
+    public function add($method, $uri, $controllerAction, $middleware = null) {
         $this->routes[] = [
-            'method' => $method,
-            'uri' => $uri,
-            'controllerAction' => $controllerAction
+            'method'      => $method,
+            'uri'        => $uri,
+            'controllerAction' => $controllerAction,
+            'middleware' => $middleware
         ];
     }
 
-    public function get($uri, $controllerAction) {
-        $this->add('GET', $uri, $controllerAction);
+    public function get($uri, $controllerAction, $middleware = null) {
+        $this->add('GET', $uri, $controllerAction, $middleware);
     }
 
-    public function post($uri, $controllerAction) {
-        $this->add('POST', $uri, $controllerAction);
+    public function post($uri, $controllerAction, $middleware = null) {
+        $this->add('POST', $uri, $controllerAction, $middleware);
     }
 
     public function route($uri, $method) {
         foreach ($this->routes as $route) {
             if ($route['uri'] === $uri && $route['method'] === $method) {
+                // Run middleware if defined
+                if (!empty($route['middleware']) && is_callable($route['middleware'])) {
+                    call_user_func($route['middleware']);
+                }
+
                 list($controller, $action) = explode('@', $route['controllerAction']);
                 $controllerClass = "App\\Controllers\\{$controller}";
                 
@@ -35,7 +42,9 @@ class Router {
         
         // Return a 404 response
         http_response_code(404);
-        require BASE_PATH . '/views/404.php';
+        if (file_exists(BASE_PATH . '/views/404.php')) {
+            require BASE_PATH . '/views/404.php';
+        }
         return;
     }
 }

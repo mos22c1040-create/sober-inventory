@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
 import '../models/product.dart';
+import '../utils/api_parse.dart';
 
 class PurchasesScreen extends StatefulWidget {
   const PurchasesScreen({super.key, required this.api});
@@ -137,7 +138,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                                 ),
                               ),
                               Text(
-                                '${((p['total'] as num?)?.toStringAsFixed(0) ?? '0')} د.ع',
+                                '${toDouble(p['total']).toStringAsFixed(0)} د.ع',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w800,
                                   color: Color(0xFF7C3AED),
@@ -204,7 +205,7 @@ class _NewPurchaseScreenState extends State<_NewPurchaseScreen> {
     setState(() {
       final i = _cart.indexWhere((e) => e['product_id'] == p.id);
       if (i >= 0) {
-        _cart[i]['quantity'] = (_cart[i]['quantity'] as int) + 1;
+        _cart[i]['quantity'] = toInt(_cart[i]['quantity']) + 1;
       } else {
         _cart.add({'product_id': p.id, 'quantity': 1, 'unit_cost': p.price, 'name': p.name});
       }

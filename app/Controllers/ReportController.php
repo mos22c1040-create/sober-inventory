@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Helpers\AuthHelper;
 use App\Core\Database;
 use App\Models\Product;
+use App\Services\ReportService;
 
 class ReportController extends Controller
 {
@@ -263,5 +264,50 @@ class ReportController extends Controller
         }
         fclose($out);
         exit;
+    }
+
+    /** GET /api/reports/pnl — Profit & Loss Statement (admin only) */
+    public function profitAndLoss(): void
+    {
+        AuthHelper::requireRole('admin');
+
+        $startDate = trim((string) ($_GET['start_date'] ?? ''));
+        $endDate = trim((string) ($_GET['end_date'] ?? ''));
+
+        if ($startDate === '') {
+            $startDate = date('Y-m-01');
+        }
+        if ($endDate === '') {
+            $endDate = date('Y-m-d');
+        }
+
+        $parsedStart = \DateTime::createFromFormat('Y-m-d', $startDate);
+        $parsedEnd = \DateTime::createFromFormat('Y-m-d', $endDate);
+
+        if (!$parsedStart || $parsedStart->format('Y-m-d') !== $startDate) {
+            $this->jsonResponse(['error' => 'صيغة تاريخ البداية غير صحيحة (استخدم Y-m-d)'], 400);
+            return;
+        }
+        if (!$parsedEnd || $parsedEnd->format('Y-m-d') !== $endDate) {
+            $this->jsonResponse(['error' => 'صيغة تاريخ النهاية غير صحيحة (استخدم Y-m-d)'], 400);
+            return;
+        }
+
+        if ($startDate > $endDate) {
+            $this->jsonResponse(['error' => 'تاريخ البداية يجب أن يكون قبل تاريخ النهاية'], 400);
+            return;
+        }
+
+        try {
+            $report = ReportService::getProfitAndLoss($startDate, $endDate);
+
+            $this->jsonResponse([
+                'success' => true,
+                'data'    => $report,
+            ]);
+        } catch (\Exception $e) {
+            error_log('ReportService::getProfitAndLoss failed: ' . $e->getMessage());
+            $this->jsonResponse(['error' => 'حدث خطأ أثناء جلب التقرير'], 500);
+        }
     }
 }

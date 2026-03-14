@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
+import '../utils/api_parse.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key, required this.api});
@@ -127,7 +128,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
-                                      onPressed: () => _delete((c['id'] as int?) ?? 0),
+                                      onPressed: () => _delete(toInt(c['id'])),
                                     ),
                                   ],
                                 ),
@@ -185,7 +186,7 @@ class _CategoryFormState extends State<_CategoryForm> {
       final Map<String, dynamic> r;
       if (widget.category != null) {
         r = await widget.api.updateCategory(
-          id: (widget.category!['id'] as int?) ?? 0,
+          id: toInt(widget.category!['id']),
           name: _nameCtrl.text.trim(),
           description: _descCtrl.text.trim(),
           csrfToken: widget.csrfToken,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
+import '../utils/api_parse.dart';
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key, required this.api});
@@ -43,16 +44,20 @@ class _SalesScreenState extends State<SalesScreen> {
       final r = await widget.api.getSales(page: page, perPage: 20);
       if (mounted) {
         setState(() {
-          _sales = (r['data'] as List? ?? [])
-              .map((e) => Map<String, dynamic>.from(e as Map))
-              .toList();
+          final rawList = r['data'] as List? ?? [];
+          _sales = rawList.map((e) {
+            final m = Map<String, dynamic>.from(e as Map);
+            m['total'] = toDouble(m['total']);
+            m['id'] = toInt(m['id']);
+            return m;
+          }).toList();
           _stats = {
-            'today_total': r['today_total'],
-            'today_count': r['today_count'],
-            'monthly_total': r['monthly_total'],
+            'today_total': toDouble(r['today_total']),
+            'today_count': toInt(r['today_count']),
+            'monthly_total': toDouble(r['monthly_total']),
           };
           _page = page;
-          _pages = (r['pages'] as int?) ?? 1;
+          _pages = toInt(r['pages']).clamp(1, 999999);
         });
       }
     } catch (_) {
@@ -186,8 +191,7 @@ class _SalesScreenState extends State<SalesScreen> {
                                   ),
                                 );
                                 if (confirm == true) {
-                                  _cancelSale(
-                                      ((_sales[i]['id'] as int?) ?? 0));
+                                  _cancelSale(toInt(_sales[i]['id']));
                                 }
                               }
                             : null,
@@ -206,11 +210,9 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   Widget _buildStats() {
-    final todayTotal =
-        ((_stats['today_total'] as num?)?.toDouble() ?? 0.0);
-    final todayCount = (_stats['today_count'] as int?) ?? 0;
-    final monthlyTotal =
-        ((_stats['monthly_total'] as num?)?.toDouble() ?? 0.0);
+    final todayTotal = toDouble(_stats['today_total']);
+    final todayCount = toInt(_stats['today_count']);
+    final monthlyTotal = toDouble(_stats['monthly_total']);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -302,7 +304,7 @@ class _SaleCard extends StatelessWidget {
     final statusColor = isPaid ? AppColors.success : AppColors.error;
     final statusBg = isPaid ? AppColors.successBg : AppColors.errorBg;
     final statusLabel = isPaid ? 'مدفوعة' : 'ملغاة';
-    final total = ((sale['total'] as num?)?.toDouble() ?? 0.0).toStringAsFixed(0);
+    final total = toDouble(sale['total']).toStringAsFixed(0);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),

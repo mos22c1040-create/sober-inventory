@@ -35,6 +35,15 @@ $bp             = $basePathSafe ?? '';
                 <?php endforeach; ?>
             </select>
         </div>
+        <div>
+            <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">النوع</label>
+            <select name="type_id" class="app-input w-full rounded-lg px-4 py-2.5 border text-sm" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
+                <option value="">— لا يوجد —</option>
+                <?php foreach (($types ?? []) as $t): ?>
+                <option value="<?= (int)$t['id'] ?>" <?= (isset($product['type_id']) && (int)$product['type_id'] === (int)$t['id']) ? 'selected' : '' ?>><?= htmlspecialchars($t['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         <!-- الباركود: مسح مباشر بكاميرا الجوال أو قارئ USB أو يدوي -->
         <div class="rounded-xl p-4" style="border: 1px solid rgb(var(--border)); background: rgb(var(--muted));">
             <label class="block text-sm font-semibold mb-2" style="color: rgb(var(--foreground));">الباركود (SKU)</label>

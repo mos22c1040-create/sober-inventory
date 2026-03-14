@@ -7,15 +7,25 @@ $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 $bp             = $basePathSafe ?? '';
 ?>
 <div class="dashboard-page min-h-full w-full">
-<header class="page-header flex flex-wrap items-end justify-between gap-3 mb-6">
+<header class="dashboard-hero flex flex-wrap items-center justify-between gap-4">
     <div>
         <h1 class="page-title">لوحة التحكم</h1>
         <p class="page-subtitle">نظرة عامة على المخزون والمبيعات</p>
     </div>
-    <a href="<?= $bp ?>/pos" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200 focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
-       style="background: linear-gradient(135deg, rgb(5 150 105), rgb(16 185 129)); box-shadow: 0 4px 12px rgb(5 150 105 / 0.35);">
-        <i class="fa-solid fa-cash-register"></i> نقطة البيع
-    </a>
+    <div class="flex flex-wrap items-center gap-2">
+        <a href="<?= $bp ?>/pos" class="btn-pos inline-flex items-center gap-2 text-sm text-white focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:outline-none cursor-pointer"
+           aria-label="فتح نقطة البيع">
+            <i class="fa-solid fa-cash-register" aria-hidden="true"></i>
+            <span>نقطة البيع</span>
+        </a>
+        <?php if ($isAdmin): ?>
+        <a href="<?= $bp ?>/reports" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer"
+           style="background: rgb(219 234 254); color: rgb(var(--primary)); border: 1.5px solid rgb(var(--border));">
+            <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+            <span>التقارير</span>
+        </a>
+        <?php endif; ?>
+    </div>
 </header>
 
 <!-- ─── Stats Row ─────────────────────────────────────────────────────── -->
@@ -37,6 +47,18 @@ $bp             = $basePathSafe ?? '';
         <p class="mt-2 text-xs font-semibold" style="color: rgb(var(--muted-foreground));">
             <i class="fa-solid fa-receipt me-1" aria-hidden="true"></i><?= (int)($todayCount ?? 0) ?> فاتورة
         </p>
+        <?php
+        $yesterdaySales = (float)($yesterdaySales ?? 0);
+        $yesterdayCount  = (int)($yesterdayCount ?? 0);
+        if ($yesterdaySales > 0 || $yesterdayCount > 0):
+            $salesDiff = $yesterdaySales > 0 ? round((((float)($todaySales ?? 0) - $yesterdaySales) / $yesterdaySales) * 100, 1) : 0;
+            $countDiff = $yesterdayCount > 0 ? (int)($todayCount ?? 0) - $yesterdayCount : 0;
+        ?>
+        <p class="mt-1.5 text-[11px] font-medium" style="color: rgb(var(--muted-foreground));">
+            <i class="fa-solid fa-arrow-trend-up me-1" aria-hidden="true"></i>
+            مقارنة بأمس: <?= $salesDiff >= 0 ? '+' : '' ?><?= $salesDiff ?>% إيراد · <?= $countDiff >= 0 ? '+' : '' ?><?= $countDiff ?> فاتورة
+        </p>
+        <?php endif; ?>
     </div>
 
     <!-- عدد الفواتير -->
@@ -98,6 +120,44 @@ $bp             = $basePathSafe ?? '';
         </div>
     </div>
 </div>
+
+<?php
+$lowStockList = $lowStockProducts ?? [];
+$hasLowStock = ($lowStockCount ?? 0) > 0;
+?>
+<?php if ($hasLowStock && !empty($lowStockList)): ?>
+<!-- ─── تنبيهات المخزون ───────────────────────────────────────────────── -->
+<div class="app-card-flat p-5 mb-5 animate-slide-up" style="animation-delay:50ms; border-color: rgb(254 202 202);">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
+                <i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold" style="color: rgb(var(--foreground));">تنبيهات المخزون</h3>
+                <p class="text-xs font-medium" style="color: rgb(var(--muted-foreground));">منتجات تحتاج إعادة تخزين</p>
+            </div>
+        </div>
+        <a href="<?= $bp ?>/products" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+           style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
+            <i class="fa-solid fa-boxes-stacked text-xs" aria-hidden="true"></i>
+            عرض المنتجات
+        </a>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <?php foreach (array_slice($lowStockList, 0, 10) as $p): ?>
+        <a href="<?= $bp ?>/products" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer"
+           style="border-color: rgb(254 202 202); background: rgb(255 247 247); color: rgb(var(--foreground));">
+            <span class="font-medium truncate max-w-[140px]"><?= htmlspecialchars($p['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="badge badge-danger shrink-0"><?= (int)($p['quantity'] ?? 0) ?> / <?= (int)($p['low_stock_threshold'] ?? 0) ?></span>
+        </a>
+        <?php endforeach; ?>
+        <?php if (count($lowStockList) > 10): ?>
+        <span class="inline-flex items-center px-3 py-2 text-xs font-semibold" style="color: rgb(var(--muted-foreground));">+<?= count($lowStockList) - 10 ?> أخرى</span>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- ─── Chart + Recent Sales ──────────────────────────────────────────── -->
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
+import '../utils/api_parse.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key, required this.api});
@@ -43,7 +44,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       if (mounted) {
         setState(() {
           _items = (r['data'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-          _monthlyTotal = ((r['monthly_total'] as num?)?.toDouble() ?? 0.0);
+          _monthlyTotal = toDouble(r['monthly_total']);
         });
       }
     } catch (_) {
@@ -205,7 +206,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    '${((e['amount'] as num?)?.toStringAsFixed(0) ?? '0')} د.ع',
+                                    '${toDouble(e['amount']).toStringAsFixed(0)} د.ع',
                                     style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.error, fontSize: 14),
                                   ),
                                   const SizedBox(height: 6),
@@ -221,7 +222,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                       ),
                                       const SizedBox(width: 6),
                                       GestureDetector(
-                                        onTap: () => _delete((e['id'] as int?) ?? 0),
+                                        onTap: () => _delete(toInt(e['id'])),
                                         child: Container(
                                           padding: const EdgeInsets.all(5),
                                           decoration: BoxDecoration(color: AppColors.errorBg, borderRadius: BorderRadius.circular(8)),
@@ -302,7 +303,7 @@ class _ExpenseFormState extends State<_ExpenseForm> {
       final Map<String, dynamic> r;
       if (isEdit) {
         r = await widget.api.updateExpense(
-          id: (widget.expense!['id'] as int?) ?? 0,
+          id: toInt(widget.expense!['id']),
           amount: amount,
           category: _selectedCategory,
           description: _descCtrl.text.trim(),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
 import '../models/product.dart';
+import '../utils/api_parse.dart';
+import 'barcode_scanner_screen.dart';
 
 class ProductFormScreen extends StatefulWidget {
   const ProductFormScreen({
@@ -29,6 +31,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   final _skuCtrl = TextEditingController();
   final _thresholdCtrl = TextEditingController();
   bool _saving = false;
+  List<Map<String, dynamic>> _types = [];
+  int? _selectedTypeId;
 
   @override
   void initState() {
@@ -39,8 +43,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       _priceCtrl.text = p.price.toString();
       _qtyCtrl.text = p.quantity.toString();
       _skuCtrl.text = p.sku ?? '';
+      _selectedTypeId = p.typeId;
     }
     _thresholdCtrl.text = '5';
+    _loadTypes();
+  }
+
+  Future<void> _loadTypes() async {
+    try {
+      final list = await widget.api.getTypes();
+      if (mounted) setState(() => _types = list);
+    } catch (_) {}
   }
 
   @override
@@ -117,6 +130,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
   }
 
+  Future<void> _scanBarcode() async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (_) => const BarcodeScannerScreen(title: 'مسح الباركود'),
+      ),
+    );
+    if (code != null && code.isNotEmpty && mounted) {
+      _skuCtrl.text = code;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.product != null;
@@ -178,6 +202,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   children: [
                     _field(_nameCtrl, 'اسم المنتج *', Icons.label_rounded),
                     const SizedBox(height: 14),
+                    _buildTypeDropdown(),
+                    const SizedBox(height: 14),
+                    _barcodeField(),
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(child: _field(_priceCtrl, 'السعر *', Icons.sell_rounded, isNum: true)),
@@ -193,8 +221,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         Expanded(child: _field(_thresholdCtrl, 'حد التنبيه', Icons.warning_rounded, isInt: true)),
                       ],
                     ),
-                    const SizedBox(height: 14),
-                    _field(_skuCtrl, 'الباركود / SKU (اختياري)', Icons.qr_code_rounded),
                   ],
                 ),
               ),
@@ -217,12 +243,102 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
+  Widget _buildTypeDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            'النوع',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        DropdownButtonFormField<int?>(
+          value: _selectedTypeId,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.layers_rounded, size: 20),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          hint: const Text('— لا يوجد —'),
+          items: [
+            const DropdownMenuItem<int?>(value: null, child: Text('— لا يوجد —')),
+            ..._types.map((t) => DropdownMenuItem<int?>(
+              value: toInt(t['id']),
+              child: Text((t['name'] ?? '').toString()),
+            )),
+          ],
+          onChanged: (v) => setState(() => _selectedTypeId = v),
+        ),
+      ],
+    );
+  }
+
+  Widget _barcodeField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            'رمز المنتج / الباركود (SKU)',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _skuCtrl,
+                decoration: InputDecoration(
+                  hintText: 'أدخل الباركود أو الرمز للبحث والمسح',
+                  prefixIcon: const Icon(Icons.qr_code_rounded, size: 20),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 26),
+                onPressed: _scanBarcode,
+                tooltip: 'قراءة الباركود',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _field(
     TextEditingController ctrl,
     String label,
     IconData icon, {
     bool isNum = false,
     bool isInt = false,
+    String? hint,
   }) {
     return TextField(
       controller: ctrl,
@@ -233,6 +349,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               : TextInputType.text,
       decoration: InputDecoration(
         labelText: label,
+        hintText: hint,
         prefixIcon: Icon(icon, size: 20),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

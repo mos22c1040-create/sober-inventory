@@ -195,4 +195,29 @@ class SaleController extends Controller
             $this->jsonResponse(['error' => 'حدث خطأ أثناء حفظ الفاتورة'], 500);
         }
     }
+
+    /** GET /api/sales/{id} — Get sale details with items (for returns) */
+    public function showApi(): void
+    {
+        AuthHelper::requireAuth();
+
+        $id = (int) ($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            $this->jsonResponse(['error' => 'معرف الفاتورة مطلوب'], 400);
+        }
+
+        $sale = Sale::find($id);
+        if (!$sale) {
+            $this->jsonResponse(['error' => 'الفاتورة غير موجودة'], 404);
+        }
+
+        $items = Sale::getItems($id);
+
+        $this->jsonResponse([
+            'data' => [
+                'sale'  => $sale,
+                'items' => $items,
+            ],
+        ]);
+    }
 }

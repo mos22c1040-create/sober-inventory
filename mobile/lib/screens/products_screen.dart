@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../models/product.dart';
 import '../theme/app_theme.dart';
+import 'barcode_scanner_screen.dart';
 import 'product_form_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -22,6 +24,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   bool _searching = false;
   String _csrfToken = '';
+  String _stockFilter = 'all';
+
+  List<Product> get _displayProducts {
+    if (_stockFilter == 'all') return _products;
+    return _products.where((p) {
+      if (_stockFilter == 'out') return p.quantity <= 0;
+      if (_stockFilter == 'low') return p.quantity > 0 && p.quantity <= 5;
+      if (_stockFilter == 'available') return p.quantity > 5;
+      return true;
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -77,15 +90,45 @@ class _ProductsScreenState extends State<ProductsScreen> {
     try {
       final res = await widget.api.fetchProducts(page: 1, perPage: 50);
       final List list = (res['data'] ?? []) as List;
-      setState(() {
-        _products = list
-            .map((e) => Product.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      });
+      if (mounted) {
+        setState(() {
+          _products = list
+              .map((e) => Product.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+        });
+      }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final code = e.response?.statusCode;
+      if (code == 401) {
+        setState(() => _error = 'انتهت الجلسة. سجّل الدخول من جديد.');
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        setState(() => _error = 'تعذر الاتصال بالخادم. تحقق من الإنترنت.');
+      } else {
+        setState(() => _error = 'فشل تحميل المنتجات.');
+      }
     } catch (_) {
-      setState(() => _error = 'فشل تحميل المنتجات');
+      if (mounted) setState(() => _error = 'فشل تحميل المنتجات. تحقق من الاتصال.');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _setStockFilter(String filter) {
+    setState(() => _stockFilter = filter);
+  }
+
+  Future<void> _openBarcodeScanner() async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (_) => const BarcodeScannerScreen(title: 'مسح باركود المنتج'),
+      ),
+    );
+    if (code != null && code.isNotEmpty && mounted) {
+      _searchCtrl.text = code;
+      _searchByBarcode();
     }
   }
 
@@ -150,7 +193,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     : RefreshIndicator(
                         color: AppColors.primary,
                         onRefresh: _loadProducts,
-                        child: _products.isEmpty
+                        child: _displayProducts.isEmpty
                             ? _buildEmpty()
                             : _buildList(),
                       ),
@@ -181,7 +224,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ),
                 ),
                 Text(
-                  '${_products.length} منتج',
+                  '${_displayProducts.length} منتج',
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -197,13 +240,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 Container(
                   margin: const EdgeInsets.only(left: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))],
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: IconButton(
-                    icon: const Icon(Icons.add_rounded, color: Colors.white),
-                    onPressed: () => _showProductForm(),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => _showProductForm(),
+                      child: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(Icons.add_rounded, color: Colors.white, size: 24),
+                      ),
+                    ),
                   ),
                 ),
               Container(
@@ -230,52 +286,95 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: TextField(
-          controller: _searchCtrl,
-          decoration: InputDecoration(
-            hintText: 'بحث بالباركود أو الرمز SKU...',
-            prefixIcon: const Icon(
-              Icons.qr_code_scanner_rounded,
-              color: AppColors.primary,
-              size: 22,
-            ),
-            suffixIcon: _searching
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primary,
-                      ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary, size: 26),
+                  onPressed: _openBarcodeScanner,
+                  tooltip: 'مسح الباركود',
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'بحث بالباركود أو الرمز SKU...',
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 15),
+                      filled: false,
+                      suffixIcon: _searching
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.search_rounded, color: AppColors.primary),
+                              onPressed: _searchByBarcode,
+                            ),
                     ),
-                  )
-                : IconButton(
-                    icon: const Icon(Icons.search_rounded, color: AppColors.primary),
-                    onPressed: _searchByBarcode,
+                    onSubmitted: (_) => _searchByBarcode(),
                   ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-            filled: false,
+                ),
+              ],
+            ),
           ),
-          onSubmitted: (_) => _searchByBarcode(),
         ),
-      ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: Row(
+            children: [
+              _FilterChip(
+                label: 'الكل',
+                isSelected: _stockFilter == 'all',
+                onTap: () => _setStockFilter('all'),
+              ),
+              const SizedBox(width: 8),
+              _FilterChip(
+                label: 'متوفر',
+                isSelected: _stockFilter == 'available',
+                color: AppColors.success,
+                onTap: () => _setStockFilter('available'),
+              ),
+              const SizedBox(width: 8),
+              _FilterChip(
+                label: 'منخفض',
+                isSelected: _stockFilter == 'low',
+                color: AppColors.warning,
+                onTap: () => _setStockFilter('low'),
+              ),
+              const SizedBox(width: 8),
+              _FilterChip(
+                label: 'نفد',
+                isSelected: _stockFilter == 'out',
+                color: AppColors.error,
+                onTap: () => _setStockFilter('out'),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -308,9 +407,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget _buildList() {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-      itemCount: _products.length,
+      itemCount: _displayProducts.length,
       itemBuilder: (context, i) {
-        final p = _products[i];
+        final p = _displayProducts[i];
         final isOutOfStock = p.quantity <= 0;
         final isLow = p.quantity > 0 && p.quantity <= 5;
         return _ProductCard(
@@ -326,38 +425,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.inventory_2_rounded,
-              size: 48,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'لا توجد منتجات',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'أضف منتجات من لوحة التحكم على الموقع',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
+    final isFiltered = _stockFilter != 'all';
+    return EmptyState(
+      icon: isFiltered ? Icons.filter_list_off_rounded : Icons.inventory_2_rounded,
+      title: isFiltered ? 'لا توجد نتائج' : 'لا توجد منتجات',
+      subtitle: isFiltered 
+          ? 'جرب فلتر آخر'
+          : 'أضف منتجات من لوحة التحكم على الموقع',
+      action: isFiltered
+          ? TextButton(
+              onPressed: () => _setStockFilter('all'),
+              child: const Text('إزالة الفلتر'),
+            )
+          : null,
     );
   }
 
@@ -365,12 +445,35 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
       itemCount: 8,
-      itemBuilder: (_, i) => Container(
-        height: 84,
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: AppColors.outline,
-          borderRadius: BorderRadius.circular(18),
+      itemBuilder: (_, i) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: AppCards.modern(
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const SkeletonLoader(width: 52, height: 52, borderRadius: 14),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonLoader(width: 120, height: 16),
+                    const SizedBox(height: 8),
+                    SkeletonLoader(width: 80, height: 12),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SkeletonLoader(width: 50, height: 18),
+                  const SizedBox(height: 8),
+                  SkeletonLoader(width: 40, height: 20, borderRadius: 10),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -410,142 +513,136 @@ class _ProductCard extends StatelessWidget {
       badgeText = 'منخفض';
     }
 
-    return GestureDetector(
+    final firstLetter = product.name.isNotEmpty ? product.name[0].toUpperCase() : '?';
+
+    return AppCards.modern(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.15),
-                    AppColors.primaryLight.withValues(alpha: 0.08),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                Icons.inventory_2_rounded,
-                color: AppColors.primary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        'الكمية: ${product.quantity}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      if (product.sku != null) ...[
-                        const Text(' · ',
-                            style: TextStyle(color: AppColors.textHint)),
-                        Text(
-                          product.sku!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textHint,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.15),
+                  AppColors.primaryLight.withValues(alpha: 0.08),
                 ],
               ),
+              borderRadius: BorderRadius.circular(14),
             ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            child: Center(
+              child: Text(
+                firstLetter,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${product.price.toStringAsFixed(0)}',
+                  product.name,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
-                    letterSpacing: -0.3,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: badgeBg,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: badgeColor,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      'الكمية: ${product.quantity}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  ),
-                ),
-                if (onEdit != null || onDelete != null) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      if (onEdit != null)
-                        GestureDetector(
-                          onTap: onEdit,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                            child: const Icon(Icons.edit_rounded, color: AppColors.primary, size: 14),
-                          ),
+                    if (product.sku != null) ...[
+                      const Text(' · ',
+                          style: TextStyle(color: AppColors.textHint)),
+                      Text(
+                        product.sku!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textHint,
                         ),
-                      if (onEdit != null && onDelete != null) const SizedBox(width: 6),
-                      if (onDelete != null)
-                        GestureDetector(
-                          onTap: onDelete,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(color: AppColors.errorBg, borderRadius: BorderRadius.circular(6)),
-                            child: const Icon(Icons.delete_rounded, color: AppColors.error, size: 14),
-                          ),
-                        ),
+                      ),
                     ],
-                  ),
-                ],
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                product.price.toStringAsFixed(0),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+              if (onEdit != null || onDelete != null) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    if (onEdit != null)
+                      GestureDetector(
+                        onTap: onEdit,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                          child: const Icon(Icons.edit_rounded, color: AppColors.primary, size: 14),
+                        ),
+                      ),
+                    if (onEdit != null && onDelete != null) const SizedBox(width: 6),
+                    if (onDelete != null)
+                      GestureDetector(
+                        onTap: onDelete,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(color: AppColors.errorBg, borderRadius: BorderRadius.circular(6)),
+                          child: const Icon(Icons.delete_rounded, color: AppColors.error, size: 14),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -655,6 +752,57 @@ class _ProductDetailSheet extends StatelessWidget {
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final Color? color;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.isSelected,
+    this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final chipColor = color ?? AppColors.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? chipColor : AppColors.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? chipColor : AppColors.border,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: chipColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
       ),
     );
   }

@@ -14,6 +14,7 @@
         'pos'        => $pathForNav === '/pos',
         'products'   => strpos($pathForNav, '/products') === 0,
         'categories' => strpos($pathForNav, '/categories') === 0,
+        'types'      => strpos($pathForNav, '/types') === 0,
         'sales'      => strpos($pathForNav, '/sales') === 0,
         'purchases'  => strpos($pathForNav, '/purchases') === 0,
         'expenses'   => strpos($pathForNav, '/expenses') === 0,
@@ -25,6 +26,7 @@
     ];
     $activeClass   = 'sidebar-link-active';
     $inactiveClass = 'sidebar-link-inactive';
+    $sidebarLowStock = (class_exists('\App\Models\Product')) ? \App\Models\Product::countLowStock() : 0;
     ?>
     <!-- Mobile backdrop: يظهر فقط على الموبايل عند فتح القائمة -->
     <div id="sidebar-backdrop"
@@ -75,15 +77,24 @@
             </a>
 
             <a href="<?= $basePathSafe ?>/products"
-               class="flex items-center px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-xl <?= $nav['products'] ? $activeClass : $inactiveClass ?> group transition-all duration-200 focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 focus:ring-offset-slate-900 cursor-pointer">
+               class="flex items-center px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-xl <?= $nav['products'] ? $activeClass : $inactiveClass ?> group transition-all duration-200 focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 focus:ring-offset-slate-900 cursor-pointer relative">
                 <i class="fa-solid fa-tags w-5 text-center ms-3 transition-transform duration-200 group-hover:scale-110" aria-hidden="true"></i>
                 المنتجات
+                <?php if ($sidebarLowStock > 0): ?>
+                <span class="absolute top-1.5 end-2 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold text-white bg-red-500" title="<?= (int)$sidebarLowStock ?> منتج منخفض المخزون"><?= $sidebarLowStock > 99 ? '99+' : (int)$sidebarLowStock ?></span>
+                <?php endif; ?>
             </a>
 
             <a href="<?= $basePathSafe ?>/categories"
                class="flex items-center px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-xl <?= $nav['categories'] ? $activeClass : $inactiveClass ?> group transition-all duration-200 focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 focus:ring-offset-slate-900 cursor-pointer">
                 <i class="fa-solid fa-layer-group w-5 text-center ms-3 transition-transform duration-200 group-hover:scale-110" aria-hidden="true"></i>
                 التصنيفات
+            </a>
+
+            <a href="<?= $basePathSafe ?>/types"
+               class="flex items-center px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-xl <?= $nav['types'] ? $activeClass : $inactiveClass ?> group transition-all duration-200 focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 focus:ring-offset-slate-900 cursor-pointer">
+                <i class="fa-solid fa-shapes w-5 text-center ms-3 transition-transform duration-200 group-hover:scale-110" aria-hidden="true"></i>
+                الأنواع
             </a>
 
             <a href="<?= $basePathSafe ?>/sales"
@@ -158,6 +169,12 @@
                         </p>
                     </a>
                 </div>
+                <button type="button" id="theme-toggle" title="تبديل الوضع الليلي"
+                        class="w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                        style="background: rgba(255,255,255,0.06); color: rgb(var(--sidebar-muted));"
+                        aria-label="تبديل الوضع الليلي">
+                    <i class="fa-solid fa-moon text-sm" id="theme-icon" aria-hidden="true"></i>
+                </button>
                 <form method="POST" action="<?= $basePathSafe ?>/api/logout">
                     <button type="submit"
                             class="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 focus:ring-2 focus:ring-red-400 focus:ring-offset-1 focus:ring-offset-slate-900 cursor-pointer"
