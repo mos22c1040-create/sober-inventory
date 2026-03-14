@@ -134,7 +134,6 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                 ),
                 _buildBottom(),
               ]),
-      ),
     );
   }
 

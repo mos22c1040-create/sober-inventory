@@ -149,7 +149,6 @@ class _ReturnScreenState extends State<ReturnScreen> {
             : _saleData == null
                 ? _buildSearch()
                 : _buildForm(),
-      ),
     );
   }
 
