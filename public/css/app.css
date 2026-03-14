@@ -93,6 +93,10 @@
     /* Accent (alias for primary — used in older views) */
     --accent: 79 70 229;
 
+    /* Purple semantic color */
+    --purple:        109 40 217;
+    --purple-subtle: 237 233 254;
+
     /* Legacy surface variable */
     --color-surface-elevated: 255 255 255;
 
@@ -149,6 +153,10 @@ html[data-theme="dark"] {
 
     --accent:               129 120 246;
     --color-surface-elevated: 12 17 32;
+
+    /* Purple — dark mode */
+    --purple:               192 132 252;
+    --purple-subtle:        45 20 80;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -291,6 +299,37 @@ html[data-theme="dark"] .glass {
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
     border-color: rgb(var(--border-strong));
+}
+
+/* ── Stat card variants ── */
+.stat-card-danger {
+    border-color: rgb(var(--color-danger) / 0.35);
+}
+
+/* ── Alert card danger (low stock banner) ── */
+.alert-card-danger {
+    border-color: rgb(var(--color-danger) / 0.30);
+    background: rgb(var(--card));
+}
+
+/* ── Low stock chip (theme-aware) ── */
+.low-stock-chip {
+    border: 1px solid rgb(var(--color-danger) / 0.30);
+    background: rgb(var(--color-danger-light) / 0.5);
+    color: rgb(var(--foreground));
+}
+.low-stock-chip:hover {
+    background: rgb(var(--color-danger-light));
+}
+
+/* ── Stat icon color variants (theme-aware) ── */
+.stat-icon-purple {
+    background: rgb(var(--purple-subtle));
+    color: rgb(var(--purple));
+}
+.badge-purple {
+    background: rgb(var(--purple-subtle));
+    color: rgb(var(--purple));
 }
 
 .stat-value {

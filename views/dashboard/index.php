@@ -93,11 +93,10 @@ $bp             = $basePathSafe ?? '';
     <!-- إجمالي المنتجات -->
     <div class="stat-card">
         <div class="flex items-start justify-between mb-4">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                 style="background: rgb(237 233 254); color: rgb(109 40 217);">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 stat-icon-purple">
                 <i class="fa-solid fa-boxes-stacked text-base" aria-hidden="true"></i>
             </div>
-            <span class="badge" style="background: rgb(237 233 254); color: rgb(109 40 217);">الكتالوج</span>
+            <span class="badge badge-purple">الكتالوج</span>
         </div>
         <p class="text-[10.5px] font-bold uppercase tracking-widest mb-1.5" style="color: rgb(var(--muted-foreground));">إجمالي المنتجات</p>
         <h3 class="stat-value text-2xl font-extrabold mb-2" style="color: rgb(var(--foreground));">
@@ -110,7 +109,7 @@ $bp             = $basePathSafe ?? '';
     </div>
 
     <!-- منخفضة المخزون -->
-    <div class="stat-card" style="border-color: rgb(254 202 202);">
+    <div class="stat-card stat-card-danger">
         <div class="flex items-start justify-between mb-4">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                  style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
@@ -137,7 +136,7 @@ $hasLowStock  = ($lowStockCount ?? 0) > 0;
 ?>
 <?php if ($hasLowStock && !empty($lowStockList)): ?>
 <!-- ─── Low Stock Alert ───────────────────────────────────────────────── -->
-<div class="app-card-flat p-5 mb-6 animate-slide-up" style="border-color: rgb(254 202 202);">
+<div class="app-card-flat p-5 mb-6 animate-slide-up alert-card-danger">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -161,8 +160,7 @@ $hasLowStock  = ($lowStockCount ?? 0) > 0;
     <div class="flex flex-wrap gap-2">
         <?php foreach (array_slice($lowStockList, 0, 10) as $p): ?>
         <a href="<?= $bp ?>/products"
-           class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all"
-           style="border-color: rgb(254 202 202); background: rgb(255 247 247); color: rgb(var(--foreground));">
+           class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all low-stock-chip">
             <span class="truncate max-w-[120px]"><?= htmlspecialchars($p['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
             <span class="badge badge-danger shrink-0 text-[10px]"><?= (int)($p['quantity'] ?? 0) ?></span>
         </a>
