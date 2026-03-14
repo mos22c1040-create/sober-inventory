@@ -103,7 +103,6 @@ class _HomeScreenState extends State<HomeScreen>
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 1,
-      scrolledUnderColor: AppColors.bg,
       title: Row(children: [
         Container(
           width: 34, height: 34,
