@@ -277,6 +277,18 @@ $bp             = $basePathSafe ?? '';
         if (!overlayBg) return;
         overlayBg.style.display = show ? 'flex' : 'none';
     }
+    function tryLoadRemoveBg(imgUrl) {
+        var urls = [
+            'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1/+esm',
+            'https://esm.sh/@imgly/background-removal@1'
+        ];
+        var i = 0;
+        function attempt() {
+            if (i >= urls.length) return Promise.reject(new Error('جميع المصادر فشلت'));
+            return import(urls[i++]).then(function(mod) { return mod.default || mod; }).then(function(removeBackground) { return removeBackground(imgUrl); }).catch(function() { return attempt(); });
+        }
+        return attempt();
+    }
     if (btnRemoveBg && imageInput) {
         btnRemoveBg.addEventListener('click', function() {
             var file = imageInput.files && imageInput.files[0];
@@ -285,18 +297,23 @@ $bp             = $basePathSafe ?? '';
                 return;
             }
             btnRemoveBg.disabled = true;
-            if (statusBg) { statusBg.textContent = 'جاري التحميل...'; statusBg.classList.remove('hidden'); }
+            if (statusBg) { statusBg.textContent = ''; statusBg.classList.add('hidden'); }
             showOverlayBg(true);
             var imgUrl = URL.createObjectURL(file);
             function done(err, dataUrl) {
                 URL.revokeObjectURL(imgUrl);
                 showOverlayBg(false);
                 btnRemoveBg.disabled = false;
-                if (statusBg) statusBg.classList.add('hidden');
                 if (err) {
-                    alert(err);
+                    if (statusBg) {
+                        statusBg.textContent = 'إزالة الخلفية غير متاحة هنا. يمكنك رفع الصورة كما هي أو استخدام تطبيق الجوال.';
+                        statusBg.classList.remove('hidden');
+                    } else {
+                        alert(err);
+                    }
                     return;
                 }
+                if (statusBg) statusBg.classList.add('hidden');
                 if (dataUrl && imageImg && imageBase64Input) {
                     var base64 = dataUrl.indexOf(',') >= 0 ? dataUrl.split(',')[1] : dataUrl;
                     imageBase64Input.value = base64;
@@ -306,10 +323,7 @@ $bp             = $basePathSafe ?? '';
                     imageInput.value = '';
                 }
             }
-            import('https://esm.sh/@imgly/background-removal@1').then(function(mod) {
-                var removeBackground = mod.default || mod;
-                return removeBackground(imgUrl);
-            }).then(function(blob) {
+            tryLoadRemoveBg(imgUrl).then(function(blob) {
                 var img = new Image();
                 img.crossOrigin = 'anonymous';
                 img.onload = function() {
@@ -326,7 +340,7 @@ $bp             = $basePathSafe ?? '';
                 img.onerror = function() { done('تعذر تحميل الصورة الناتجة'); };
                 img.src = URL.createObjectURL(blob);
             }).catch(function(e) {
-                console.warn(e);
+                console.warn('Background removal:', e);
                 done('إزالة الخلفية غير متاحة في هذا المتصفح أو فشل التحميل. يمكنك رفع الصورة كما هي أو استخدام تطبيق الجوال.');
             });
         });
