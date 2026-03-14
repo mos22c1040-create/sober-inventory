@@ -274,7 +274,7 @@ class ProductController extends Controller
 
         if ($isMultipart) {
             $input = $_POST;
-            // صورة مُعالجة من المتصفح (إزالة الخلفية → خلفية بيضاء)
+            // صورة مُعالجة في المتصفح (إزالة خلفية مجانية → base64)
             $base64 = isset($input['image_base64']) && is_string($input['image_base64']) ? trim($input['image_base64']) : '';
             if ($base64 !== '') {
                 $saved = $this->saveBase64ProductImage($base64);
@@ -338,9 +338,7 @@ class ProductController extends Controller
         return 'uploads/products/' . $name;
     }
 
-    /**
-     * Decode base64 image (from browser background-removal), save to uploads/products/, return path or null.
-     */
+    /** حفظ صورة base64 (من إزالة الخلفية في المتصفح) إلى uploads/products/ */
     private function saveBase64ProductImage(string $base64): ?string
     {
         $raw = base64_decode(strtr($base64, '-_', '+/'), true);

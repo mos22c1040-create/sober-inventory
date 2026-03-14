@@ -39,13 +39,13 @@ $bp             = $basePathSafe ?? '';
                     <input type="file" id="product-image-input" name="image" accept="image/jpeg,image/png,image/webp,image/gif" class="text-sm file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:cursor-pointer" style="color: rgb(var(--foreground));">
                     <input type="hidden" name="image_base64" id="product-image-base64" value="">
                     <div class="flex flex-wrap gap-2 items-center">
-                        <button type="button" id="btn-remove-bg" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="border-color: rgb(var(--primary)); color: rgb(var(--primary));">
+                        <button type="button" id="btn-remove-bg" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors disabled:opacity-50" style="border-color: rgb(var(--primary)); color: rgb(var(--primary));">
                             <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
-                            <span>إزالة الخلفية (خلفية بيضاء)</span>
+                            <span>إزالة الخلفية (خلفية بيضاء) — مجاناً</span>
                         </button>
                         <span id="remove-bg-status" class="text-xs hidden" style="color: rgb(var(--muted-foreground));"></span>
                     </div>
-                    <p class="text-xs" style="color: rgb(var(--muted-foreground));">JPEG، PNG، WebP أو GIF. الحد الأقصى 5 ميجابايت. اختر صورة ثم اضغط «إزالة الخلفية» لتحويل الخلفية إلى أبيض.</p>
+                    <p class="text-xs" style="color: rgb(var(--muted-foreground));">JPEG، PNG، WebP أو GIF. الحد 5 ميجابايت. اختر صورة ثم اضغط الزر أعلاه. إن لم تعمل الأداة، ارفع الصورة كما هي أو استخدم تطبيق الجوال.</p>
                 </div>
             </div>
         </div>
@@ -53,7 +53,6 @@ $bp             = $basePathSafe ?? '';
             <div class="flex flex-col items-center gap-4 p-6 rounded-2xl max-w-sm shadow-xl" style="background: rgb(var(--card)); border: 1px solid rgb(var(--border));">
                 <div class="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin" style="border-color: rgb(var(--primary));"></div>
                 <p class="text-sm font-semibold" style="color: rgb(var(--foreground));">جاري إزالة الخلفية...</p>
-                <p class="text-xs" style="color: rgb(var(--muted-foreground));">قد يستغرق بضع ثوانٍ في المرة الأولى</p>
             </div>
         </div>
 
@@ -251,7 +250,7 @@ $bp             = $basePathSafe ?? '';
     var imageBase64Input = document.getElementById('product-image-base64');
     if (imageInput && imageImg && imagePlaceholder) {
         imageInput.addEventListener('change', function() {
-            imageBase64Input && (imageBase64Input.value = '');
+            if (imageBase64Input) imageBase64Input.value = '';
             var file = this.files && this.files[0];
             if (file && file.type.startsWith('image/')) {
                 var r = new FileReader();
@@ -269,27 +268,14 @@ $bp             = $basePathSafe ?? '';
         });
     }
 
-    /* ---- إزالة الخلفية (خلفية بيضاء) في المتصفح ---- */
+    /* ---- إزالة الخلفية مجاناً في المتصفح (مكتبة من esm.sh) ---- */
     var btnRemoveBg = document.getElementById('btn-remove-bg');
     var overlayBg = document.getElementById('remove-bg-overlay');
     var statusBg = document.getElementById('remove-bg-status');
-    function showOverlayBg(show) {
-        if (!overlayBg) return;
-        overlayBg.style.display = show ? 'flex' : 'none';
+    function showOverlay(show) {
+        if (overlayBg) overlayBg.style.display = show ? 'flex' : 'none';
     }
-    function tryLoadRemoveBg(imgUrl) {
-        var urls = [
-            'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1/+esm',
-            'https://esm.sh/@imgly/background-removal@1'
-        ];
-        var i = 0;
-        function attempt() {
-            if (i >= urls.length) return Promise.reject(new Error('جميع المصادر فشلت'));
-            return import(urls[i++]).then(function(mod) { return mod.default || mod; }).then(function(removeBackground) { return removeBackground(imgUrl); }).catch(function() { return attempt(); });
-        }
-        return attempt();
-    }
-    if (btnRemoveBg && imageInput) {
+    if (btnRemoveBg && imageInput && imageBase64Input && imageImg) {
         btnRemoveBg.addEventListener('click', function() {
             var file = imageInput.files && imageInput.files[0];
             if (!file || !file.type.startsWith('image/')) {
@@ -297,51 +283,50 @@ $bp             = $basePathSafe ?? '';
                 return;
             }
             btnRemoveBg.disabled = true;
+            showOverlay(true);
             if (statusBg) { statusBg.textContent = ''; statusBg.classList.add('hidden'); }
-            showOverlayBg(true);
             var imgUrl = URL.createObjectURL(file);
             function done(err, dataUrl) {
                 URL.revokeObjectURL(imgUrl);
-                showOverlayBg(false);
+                showOverlay(false);
                 btnRemoveBg.disabled = false;
                 if (err) {
                     if (statusBg) {
-                        statusBg.textContent = 'إزالة الخلفية غير متاحة هنا. يمكنك رفع الصورة كما هي أو استخدام تطبيق الجوال.';
+                        statusBg.textContent = 'الأداة غير متاحة في هذا المتصفح. ارفع الصورة كما هي أو استخدم تطبيق الجوال.';
                         statusBg.classList.remove('hidden');
-                    } else {
-                        alert(err);
                     }
                     return;
                 }
                 if (statusBg) statusBg.classList.add('hidden');
-                if (dataUrl && imageImg && imageBase64Input) {
-                    var base64 = dataUrl.indexOf(',') >= 0 ? dataUrl.split(',')[1] : dataUrl;
-                    imageBase64Input.value = base64;
+                if (dataUrl && imageBase64Input) {
+                    var b64 = dataUrl.indexOf(',') >= 0 ? dataUrl.split(',')[1] : dataUrl;
+                    imageBase64Input.value = b64;
                     imageImg.src = dataUrl;
                     imageImg.classList.remove('hidden');
                     if (imagePlaceholder) imagePlaceholder.classList.add('hidden');
                     imageInput.value = '';
                 }
             }
-            tryLoadRemoveBg(imgUrl).then(function(blob) {
+            import('https://esm.sh/@imgly/background-removal@1').then(function(mod) {
+                var fn = mod.default || mod;
+                return fn(imgUrl);
+            }).then(function(blob) {
                 var img = new Image();
                 img.crossOrigin = 'anonymous';
                 img.onload = function() {
-                    var canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    var ctx = canvas.getContext('2d');
+                    var c = document.createElement('canvas');
+                    c.width = img.width;
+                    c.height = img.height;
+                    var ctx = c.getContext('2d');
                     ctx.fillStyle = '#FFFFFF';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillRect(0, 0, c.width, c.height);
                     ctx.drawImage(img, 0, 0);
-                    var dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-                    done(null, dataUrl);
+                    done(null, c.toDataURL('image/jpeg', 0.92));
                 };
-                img.onerror = function() { done('تعذر تحميل الصورة الناتجة'); };
+                img.onerror = function() { done('تعذر تحميل الصورة'); };
                 img.src = URL.createObjectURL(blob);
-            }).catch(function(e) {
-                console.warn('Background removal:', e);
-                done('إزالة الخلفية غير متاحة في هذا المتصفح أو فشل التحميل. يمكنك رفع الصورة كما هي أو استخدام تطبيق الجوال.');
+            }).catch(function() {
+                done('فشل التحميل');
             });
         });
     }
