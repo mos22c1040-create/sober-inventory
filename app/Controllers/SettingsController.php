@@ -91,4 +91,51 @@ class SettingsController extends Controller
 
         $this->jsonResponse(['success' => true, 'message' => 'تم حفظ الإعدادات.']);
     }
+
+    /**
+     * GET /api/settings/check-uploads — التحقق من مجلد رفع الصور (للتحقق من Volume على Railway).
+     * يتطلب تسجيل دخول كأدمن.
+     */
+    public function checkUploads(): void
+    {
+        AuthHelper::requireRole('admin');
+
+        $productsDir = BASE_PATH . '/public/uploads/products';
+        if (!is_dir(BASE_PATH . '/public/uploads')) {
+            @mkdir(BASE_PATH . '/public/uploads', 0755, true);
+        }
+        if (!is_dir($productsDir)) {
+            @mkdir($productsDir, 0755, true);
+        }
+
+        $exists = is_dir($productsDir);
+        $realPath = $exists ? realpath($productsDir) : null;
+        $writable = false;
+        $message = '';
+
+        if ($exists) {
+            $testFile = $productsDir . '/.check_' . time();
+            $written = @file_put_contents($testFile, 'ok');
+            if ($written !== false && file_exists($testFile)) {
+                $content = @file_get_contents($testFile);
+                @unlink($testFile);
+                $writable = ($content === 'ok');
+                $message = $writable
+                    ? 'مجلد الصور موجود والكتابة تعمل — Volume يعمل بشكل صحيح.'
+                    : 'المجلد موجود لكن القراءة بعد الكتابة فشلت.';
+            } else {
+                $message = 'المجلد موجود لكن لا يمكن الكتابة فيه. تحقق من Volume Mount Path.';
+            }
+        } else {
+            $message = 'مجلد uploads/products غير موجود ولا يمكن إنشاؤه.';
+        }
+
+        $this->jsonResponse([
+            'success'  => $exists && $writable,
+            'exists'   => $exists,
+            'writable' => $writable,
+            'path'     => $realPath ?: $productsDir,
+            'message'  => $message,
+        ]);
+    }
 }

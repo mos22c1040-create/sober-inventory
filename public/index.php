@@ -182,6 +182,7 @@ $router->get('/api/activity-log/list', 'ActivityLogController@indexApi', $requir
 // Settings - admin only
 $router->get('/settings', 'SettingsController@index', $requireAdmin);
 $router->get('/api/settings/data', 'SettingsController@getApi', $requireAdmin);
+$router->get('/api/settings/check-uploads', 'SettingsController@checkUploads', $requireAdmin);
 $router->post('/api/settings', 'SettingsController@store', $requireAdmin);
 
 // Users - admin only
