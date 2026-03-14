@@ -1,531 +1,441 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../api/api_client.dart';
+import '../theme/app_theme.dart';
 
 class ReturnScreen extends StatefulWidget {
-  final ApiClient api;
-
   const ReturnScreen({super.key, required this.api});
+
+  final ApiClient api;
 
   @override
   State<ReturnScreen> createState() => _ReturnScreenState();
 }
 
 class _ReturnScreenState extends State<ReturnScreen> {
-  final TextEditingController _saleIdController = TextEditingController();
-  final TextEditingController _reasonController = TextEditingController();
-  final NumberFormat _currencyFormat = NumberFormat('#,##0.00');
+  final _saleIdCtrl = TextEditingController();
+  final _reasonCtrl = TextEditingController();
+  final _fmt        = NumberFormat('#,##0');
 
-  bool _isLoading = false;
-  bool _isSubmitting = false;
-  String? _errorMessage;
+  bool _loading    = false;
+  bool _submitting = false;
+  String? _error;
   Map<String, dynamic>? _saleData;
-  List<SaleItemReturn> _returnItems = [];
+  List<_SaleItemReturn> _items = [];
 
   @override
   void dispose() {
-    _saleIdController.dispose();
-    _reasonController.dispose();
+    _saleIdCtrl.dispose();
+    _reasonCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _searchSale() async {
-    final saleIdText = _saleIdController.text.trim();
-    if (saleIdText.isEmpty) {
-      _showError('الرجاء إدخال رقم الفاتورة');
-      return;
+  // ── Logic ────────────────────────────────────────────────────────────────────
+  Future<void> _search() async {
+    final text = _saleIdCtrl.text.trim();
+    if (text.isEmpty) { _snack('أدخل رقم الفاتورة', isError: true); return; }
+    final id = int.tryParse(text);
+    if (id == null || id <= 0) {
+      _snack('رقم الفاتورة غير صالح', isError: true); return;
     }
 
-    final saleId = int.tryParse(saleIdText);
-    if (saleId == null || saleId <= 0) {
-      _showError('رقم الفاتورة غير صالح');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _saleData = null;
-      _returnItems = [];
-    });
+    setState(() { _loading = true; _error = null; _saleData = null; _items = []; });
 
     try {
-      final response = await widget.api.getSaleDetails(saleId);
-      final sale = response['sale'] as Map<String, dynamic>?;
-      final items = response['items'] as List<dynamic>?;
+      final res  = await widget.api.getSaleDetails(id);
+      final sale = res['sale'] as Map<String, dynamic>?;
+      final list = res['items'] as List<dynamic>?;
 
-      if (sale == null) {
-        _showError('الفاتورة غير موجودة');
-        return;
-      }
-
+      if (sale == null) { _snack('الفاتورة غير موجودة', isError: true); return; }
       if (sale['status'] == 'cancelled') {
-        _showError('لا يمكن إرجاع فاتورة ملغاة');
-        return;
+        _snack('لا يمكن إرجاع فاتورة ملغاة', isError: true); return;
       }
 
       setState(() {
         _saleData = sale;
-        _returnItems = (items ?? []).map((item) {
-          return SaleItemReturn(
-            productId: item['product_id'] as int,
-            productName: item['product_name'] as String? ?? 'منتج',
-            originalQuantity: item['quantity'] as int,
-            unitPrice: (item['unit_price'] as num).toDouble(),
-            returnQuantity: 0,
-          );
-        }).toList();
-        _isLoading = false;
+        _items = (list ?? []).map((e) => _SaleItemReturn(
+          productId:        (e as Map)['product_id'] as int,
+          productName:      e['product_name'] as String? ?? 'منتج',
+          originalQuantity: e['quantity'] as int,
+          unitPrice:        (e['unit_price'] as num).toDouble(),
+        )).toList();
       });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'فشل تحميل الفاتورة';
-      });
+    } catch (_) {
+      setState(() => _error = 'فشل تحميل الفاتورة');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _updateReturnQuantity(int index, int quantity) {
-    setState(() {
-      _returnItems[index].returnQuantity = quantity;
-    });
-  }
+  double get _totalRefund =>
+      _items.fold(0.0, (s, e) => s + e.returnQty * e.unitPrice);
 
-  double get _totalRefund {
-    return _returnItems.fold(0.0, (sum, item) {
-      return sum + (item.returnQuantity * item.unitPrice);
-    });
-  }
-
-  List<Map<String, dynamic>> get _selectedReturnItems {
-    return _returnItems
-        .where((item) => item.returnQuantity > 0)
-        .map((item) => {
-              'product_id': item.productId,
-              'quantity': item.returnQuantity,
-              'unit_price': item.unitPrice,
-            })
-        .toList();
-  }
-
-  Future<void> _submitReturn() async {
-    if (_saleData == null) {
-      _showError('الرجاء البحث عن فاتورة أولاً');
-      return;
+  Future<void> _submit() async {
+    final selected = _items.where((e) => e.returnQty > 0).toList();
+    if (selected.isEmpty) {
+      _snack('حدد منتجات للإرجاع', isError: true); return;
     }
 
-    final selectedItems = _selectedReturnItems;
-    if (selectedItems.isEmpty) {
-      _showError('الرجاء تحديد منتجات للإرجاع');
-      return;
-    }
-
-    final csrfToken = await _getCsrfToken();
-
-    setState(() {
-      _isSubmitting = true;
-      _errorMessage = null;
-    });
+    final csrf = await _getCsrf();
+    setState(() { _submitting = true; _error = null; });
 
     try {
-      final payload = {
-        'sale_id': int.parse(_saleIdController.text.trim()),
-        'reason': _reasonController.text.trim(),
-        'csrf_token': csrfToken,
-        'items': selectedItems,
-      };
-
-      await widget.api.submitReturn(payload);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تم معالجة الإرجاع بنجاح'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        _resetForm();
-      }
-    } catch (e) {
-      setState(() {
-        _isSubmitting = false;
-        if (e.toString().contains('400') || e.toString().contains('422')) {
-          _errorMessage = 'بيانات غير صالحة. تحقق من الكميات المراد إرجاعها.';
-        } else {
-          _errorMessage = 'فشل معالجة الإرجاع';
-        }
+      await widget.api.submitReturn({
+        'sale_id':    int.parse(_saleIdCtrl.text.trim()),
+        'reason':     _reasonCtrl.text.trim(),
+        'csrf_token': csrf,
+        'items': selected.map((e) => {
+          'product_id': e.productId,
+          'quantity':   e.returnQty,
+          'unit_price': e.unitPrice,
+        }).toList(),
       });
+      if (mounted) {
+        _snack('تم معالجة الإرجاع بنجاح');
+        _reset();
+      }
+    } catch (_) {
+      setState(() => _error = 'فشل معالجة الإرجاع. تحقق من البيانات.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
-  Future<String> _getCsrfToken() async {
+  Future<String> _getCsrf() async {
     try {
       final me = await widget.api.getMe();
       return me['csrf_token'] ?? '';
-    } catch (e) {
-      return '';
-    }
+    } catch (_) { return ''; }
   }
 
-  void _showError(String message) {
+  void _snack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: isError ? AppColors.error : AppColors.success,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      margin: const EdgeInsets.all(16),
+    ));
   }
 
-  void _resetForm() {
+  void _reset() {
     setState(() {
-      _saleIdController.clear();
-      _reasonController.clear();
+      _saleIdCtrl.clear();
+      _reasonCtrl.clear();
       _saleData = null;
-      _returnItems = [];
-      _isSubmitting = false;
+      _items = [];
     });
   }
 
+  // ── Build ────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('إرجاع المنتجات'),
-        centerTitle: true,
-        elevation: 0,
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        appBar: AppBar(
+          title: Text('إرجاع المنتجات',
+            style: GoogleFonts.cairo(
+              fontWeight: FontWeight.w700, fontSize: 17)),
+          backgroundColor: AppColors.bg,
+          elevation: 0,
+          scrolledUnderElevation: 0.5,
+        ),
+        body: _loading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary))
+            : _saleData == null
+                ? _buildSearch()
+                : _buildForm(),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _saleData == null
-              ? _buildSearchSection()
-              : _buildReturnForm(),
     );
   }
 
-  Widget _buildSearchSection() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.receipt_long_rounded,
-            size: 80,
-            color: Colors.grey.shade300,
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'البحث عن فاتورة',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+  // ── Search Section ────────────────────────────────────────────────────────────
+  Widget _buildSearch() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: AppColors.primarySurface,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.15))),
+              child: const Icon(Icons.receipt_long_rounded,
+                size: 48, color: AppColors.primary)),
+            const SizedBox(height: 22),
+            Text('البحث عن فاتورة',
+              style: GoogleFonts.cairo(
+                fontSize: 20, fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary)),
+            const SizedBox(height: 6),
+            Text('أدخل رقم الفاتورة للبدء بالإرجاع',
+              style: GoogleFonts.cairo(
+                fontSize: 13, color: AppColors.textSecondary)),
+            const SizedBox(height: 28),
+            TextField(
+              controller: _saleIdCtrl,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cairo(
+                fontSize: 26, fontWeight: FontWeight.w800,
+                letterSpacing: 2),
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onSubmitted: (_) => _search(),
+              decoration: const InputDecoration(
+                hintText: '١٢٣٤',
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 18)),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'أدخل رقم الفاتورة للبدء',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 32),
-          TextField(
-            controller: _saleIdController,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              hintText: 'رقم الفاتورة',
-              filled: true,
-              fillColor: Colors.grey.shade100,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 20,
-              ),
-            ),
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
+            if (_error != null) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.errorBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.25))),
+                child: Row(children: [
+                  const Icon(Icons.error_outline_rounded,
+                    color: AppColors.error, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(_error!,
+                    style: GoogleFonts.cairo(
+                      color: AppColors.error, fontSize: 13))),
+                ])),
             ],
-          ),
-          if (_errorMessage != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              style: TextStyle(color: Colors.red.shade700),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: AppPrimaryButton(
+                label: 'بحث',
+                icon: Icons.search_rounded,
+                onPressed: _search,
+              ),
             ),
           ],
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _searchSale,
-              icon: const Icon(Icons.search),
-              label: const Text('بحث'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  // ── Return Form ───────────────────────────────────────────────────────────────
+  Widget _buildForm() {
+    return Column(children: [
+      // Invoice header
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.primarySurface,
+          border: Border(
+            bottom: BorderSide(color: AppColors.border))),
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.receipt_rounded,
+              color: AppColors.primary, size: 20)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'فاتورة #${_saleData!['invoice_number'] ?? ''}',
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w700, fontSize: 14,
+                  color: AppColors.textPrimary)),
+              Text(
+                'العميل: ${_saleData!['customer_name'] ?? '—'}',
+                style: GoogleFonts.cairo(
+                  fontSize: 12, color: AppColors.textSecondary)),
+            ],
+          )),
+          GestureDetector(
+            onTap: _reset,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.bgSecondary,
+                borderRadius: BorderRadius.circular(8)),
+              child: const Icon(Icons.close_rounded,
+                size: 18, color: AppColors.textSecondary))),
+        ]),
+      ),
+
+      // Items
+      Expanded(
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+          itemCount: _items.length,
+          itemBuilder: (_, i) => _buildItemCard(_items[i], i),
+        ),
+      ),
+
+      // Bottom
+      _buildBottom(),
+    ]);
+  }
+
+  Widget _buildItemCard(_SaleItemReturn item, int index) {
+    return AppCards.modern(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(child: Text(item.productName,
+              style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w700, fontSize: 14,
+                color: AppColors.textPrimary),
+              maxLines: 1, overflow: TextOverflow.ellipsis)),
+            Text('${_fmt.format(item.unitPrice)} د.ع',
+              style: GoogleFonts.cairo(
+                fontSize: 12, color: AppColors.textSecondary)),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            AppBadge(
+              label: 'مباع: ${item.originalQuantity}',
+              color: AppColors.textSecondary),
+            const Spacer(),
+            // Qty stepper
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.bgSecondary,
+                borderRadius: BorderRadius.circular(12)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                _stepBtn(
+                  icon: Icons.remove_rounded,
+                  enabled: item.returnQty > 0,
+                  onTap: () => setState(
+                    () => _items[index].returnQty--),
                 ),
-              ),
+                Container(
+                  constraints: const BoxConstraints(minWidth: 36),
+                  alignment: Alignment.center,
+                  child: Text('${item.returnQty}',
+                    style: GoogleFonts.cairo(
+                      fontSize: 15, fontWeight: FontWeight.w700,
+                      color: item.returnQty > 0
+                        ? AppColors.primary : AppColors.textTertiary))),
+                _stepBtn(
+                  icon: Icons.add_rounded,
+                  enabled: item.returnQty < item.originalQuantity,
+                  onTap: () => setState(
+                    () => _items[index].returnQty++),
+                ),
+              ]),
             ),
-          ),
+          ]),
+          if (item.returnQty > 0) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.errorBg,
+                borderRadius: BorderRadius.circular(8)),
+              child: Text(
+                'مسترد: ${_fmt.format(item.returnQty * item.unitPrice)} د.ع',
+                style: GoogleFonts.cairo(
+                  color: AppColors.error, fontSize: 12,
+                  fontWeight: FontWeight.w600))),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildReturnForm() {
-    return Column(
-      children: [
-        // Sale Info Header
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'فاتورة رقم: ${_saleData!['invoice_number'] ?? ''}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    'العميل: ${_saleData!['customer_name'] ?? '—'}',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: _resetForm,
-              ),
-            ],
-          ),
-        ),
-
-        // Items List
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _returnItems.length,
-            itemBuilder: (context, index) {
-              final item = _returnItems[index];
-              return _buildReturnItemCard(item, index);
-            },
-          ),
-        ),
-
-        // Bottom Section
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                TextField(
-                  controller: _reasonController,
-                  decoration: InputDecoration(
-                    labelText: 'سبب الإرجاع (اختياري)',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'المبلغ المسترد',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      '${_currencyFormat.format(_totalRefund)}',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: _totalRefund > 0 ? Colors.red.shade700 : Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                if (_errorMessage != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _totalRefund > 0 && !_isSubmitting
-                        ? _submitReturn
-                        : null,
-                    icon: _isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.undo),
-                    label: Text(_isSubmitting ? 'جاري المعالجة...' : 'معالجة الإرجاع'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      disabledBackgroundColor: Colors.grey.shade300,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+  Widget _stepBtn({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Padding(
+        padding: const EdgeInsets.all(9),
+        child: Icon(icon,
+          size: 19,
+          color: enabled ? AppColors.primary : AppColors.textTertiary)),
     );
   }
 
-  Widget _buildReturnItemCard(SaleItemReturn item, int index) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+  // ── Bottom ────────────────────────────────────────────────────────────────────
+  Widget _buildBottom() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 20, offset: const Offset(0, -4))],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+      child: SafeArea(
+        top: false,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            TextField(
+              controller: _reasonCtrl,
+              decoration: const InputDecoration(
+                hintText: 'سبب الإرجاع (اختياري)',
+                prefixIcon: Icon(Icons.notes_rounded)),
+            ),
+            const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    item.productName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
+                Text('المبلغ المسترد',
+                  style: GoogleFonts.cairo(
+                    fontSize: 14, color: AppColors.textSecondary)),
                 Text(
-                  '${_currencyFormat.format(item.unitPrice)}',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
+                  '${_fmt.format(_totalRefund)} د.ع',
+                  style: GoogleFonts.cairo(
+                    fontSize: 22, fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: _totalRefund > 0
+                        ? AppColors.error : AppColors.textTertiary)),
               ],
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(
-                  'المباع: ${item.originalQuantity}',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.remove, size: 20),
-                        onPressed: item.returnQuantity > 0
-                            ? () => _updateReturnQuantity(
-                                  index,
-                                  item.returnQuantity - 1,
-                                )
-                            : null,
-                        constraints: const BoxConstraints(
-                          minWidth: 36,
-                          minHeight: 36,
-                        ),
-                        padding: EdgeInsets.zero,
-                      ),
-                      Container(
-                        constraints: const BoxConstraints(minWidth: 32),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '${item.returnQuantity}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add, size: 20),
-                        onPressed: item.returnQuantity < item.originalQuantity
-                            ? () => _updateReturnQuantity(
-                                  index,
-                                  item.returnQuantity + 1,
-                                )
-                            : null,
-                        constraints: const BoxConstraints(
-                          minWidth: 36,
-                          minHeight: 36,
-                        ),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (item.returnQuantity > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'مسترد: ${_currencyFormat.format(item.returnQuantity * item.unitPrice)}',
-                  style: TextStyle(
-                    color: Colors.red.shade700,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13,
-                  ),
-                ),
+            if (_error != null) ...[
+              const SizedBox(height: 6),
+              Text(_error!,
+                style: GoogleFonts.cairo(
+                  color: AppColors.error, fontSize: 12)),
+            ],
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: AppPrimaryButton(
+                label: _submitting ? 'جاري المعالجة...' : 'معالجة الإرجاع',
+                icon: Icons.undo_rounded,
+                onPressed: _totalRefund > 0 && !_submitting ? _submit : null,
+                loading: _submitting,
+                color: AppColors.error,
+                gradient: _totalRefund > 0
+                    ? const LinearGradient(
+                        colors: [Color(0xFFEF4444), Color(0xFFF87171)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight)
+                    : null,
               ),
+            ),
           ],
         ),
       ),
@@ -533,18 +443,19 @@ class _ReturnScreenState extends State<ReturnScreen> {
   }
 }
 
-class SaleItemReturn {
+// ── Data model ────────────────────────────────────────────────────────────────
+class _SaleItemReturn {
   final int productId;
   final String productName;
   final int originalQuantity;
   final double unitPrice;
-  int returnQuantity;
+  int returnQty;
 
-  SaleItemReturn({
+  _SaleItemReturn({
     required this.productId,
     required this.productName,
     required this.originalQuantity,
     required this.unitPrice,
-    this.returnQuantity = 0,
+    this.returnQty = 0,
   });
 }
