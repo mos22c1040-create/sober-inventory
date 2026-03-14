@@ -133,9 +133,7 @@ class _ReturnScreenState extends State<ReturnScreen> {
   // ── Build ────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: AppColors.bg,
         appBar: AppBar(
           title: Text('إرجاع المنتجات',
