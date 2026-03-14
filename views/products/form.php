@@ -350,10 +350,12 @@ $bp             = $basePathSafe ?? '';
         var res = await fetch(url, { method: 'POST', body: formData });
         var json = await res.json();
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = form.querySelector('input[name="id"]') ? 'حفظ التعديلات' : 'إضافة المنتج'; }
-        if (json.success && json.redirect) {
-            window.location.href = base + (json.redirect || '/products');
+        var redirect = json.redirect || (json.data && json.data.redirect);
+        if (json.success && redirect) {
+            window.location.href = base + (redirect.startsWith('/') ? redirect : '/' + redirect);
         } else {
-            alert(json.error || 'حدث خطأ أثناء الحفظ');
+            var errMsg = json.error || (json.data && json.data.error) || 'حدث خطأ أثناء الحفظ';
+            alert(errMsg);
         }
     };
 })();
