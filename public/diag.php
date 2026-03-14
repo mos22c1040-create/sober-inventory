@@ -161,6 +161,35 @@ if ($pdo && ($config['driver'] ?? '') === 'pgsql') {
     }
 }
 
+// ── 7. مجلد رفع الصور (للتحقق من Volume على Railway) ─────────────────────────
+$uploadsDir = BASE_PATH . '/public/uploads';
+$productsDir = $uploadsDir . '/products';
+$realPath = is_dir($uploadsDir) ? realpath($uploadsDir) : null;
+if (!is_dir($uploadsDir)) {
+    @mkdir($uploadsDir, 0755, true);
+}
+if (!is_dir($productsDir)) {
+    @mkdir($productsDir, 0755, true);
+}
+if (is_dir($productsDir)) {
+    $results[] = [$ok, 'مجلد uploads/products', 'موجود | المسار الحقيقي: ' . (realpath($productsDir) ?: $productsDir)];
+    $testFile = $productsDir . '/.diag_test_' . time();
+    $written = @file_put_contents($testFile, 'volume-test');
+    if ($written !== false && file_exists($testFile)) {
+        $content = @file_get_contents($testFile);
+        @unlink($testFile);
+        if ($content === 'volume-test') {
+            $results[] = [$ok, 'الكتابة في المجلد', 'نجح: كتابة وقراءة وحذف ملف اختبار — المجلد قابل للاستخدام'];
+        } else {
+            $results[] = [$warn, 'الكتابة في المجلد', 'الملف كُتب لكن القراءة فشلت'];
+        }
+    } else {
+        $results[] = [$fail, 'الكتابة في المجلد', 'فشل إنشاء ملف اختبار — تحقق من صلاحيات المجلد أو Volume Mount Path'];
+    }
+} else {
+    $results[] = [$fail, 'مجلد uploads/products', 'غير موجود ولا يمكن إنشاؤه'];
+}
+
 // ── HTML output ───────────────────────────────────────────────────────────────
 ?>
 <!DOCTYPE html>
