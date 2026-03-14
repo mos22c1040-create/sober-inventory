@@ -314,12 +314,23 @@ html[data-theme="dark"] .glass {
 
 /* ── Low stock chip (theme-aware) ── */
 .low-stock-chip {
-    border: 1px solid rgb(var(--color-danger) / 0.30);
-    background: rgb(var(--color-danger-light) / 0.5);
+    border: 1px solid rgb(var(--color-danger) / 0.25);
+    background: rgb(var(--muted));
     color: rgb(var(--foreground));
 }
 .low-stock-chip:hover {
+    border-color: rgb(var(--color-danger) / 0.45);
     background: rgb(var(--color-danger-light));
+    color: rgb(var(--color-danger));
+}
+html[data-theme="dark"] .low-stock-chip {
+    background: rgb(var(--muted));
+    color: rgb(var(--foreground));
+    border-color: rgb(var(--color-danger) / 0.30);
+}
+html[data-theme="dark"] .low-stock-chip:hover {
+    background: rgb(var(--color-danger-light));
+    color: rgb(var(--color-danger));
 }
 
 /* ── Stat icon color variants (theme-aware) ── */
