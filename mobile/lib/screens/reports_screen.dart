@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -352,7 +354,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return;
       }
       final name = isSales ? 'sales_$from\_$to.csv' : 'products_$from\_$to.csv';
-      final xfile = XFile.fromData(bytes, name: name);
+      final xfile = XFile.fromData(Uint8List.fromList(bytes), name: name);
       await Share.shareXFiles([xfile], text: isSales ? 'تقرير المبيعات' : 'أكثر المنتجات مبيعاً');
     } catch (e) {
       if (mounted) {

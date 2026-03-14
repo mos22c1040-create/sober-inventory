@@ -547,25 +547,32 @@ class _DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(children: [
-        const SkeletonLoader(height: 90, borderRadius: 24),
-        const SizedBox(height: 16),
-        Row(children: const [
-          Expanded(child: SkeletonLoader(height: 110, borderRadius: 20)),
-          SizedBox(width: 12),
-          Expanded(child: SkeletonLoader(height: 110, borderRadius: 20)),
-        ]),
-        const SizedBox(height: 12),
-        Row(children: const [
-          Expanded(child: SkeletonLoader(height: 90, borderRadius: 20)),
-          SizedBox(width: 12),
-          Expanded(child: SkeletonLoader(height: 90, borderRadius: 20)),
-        ]),
-        const SizedBox(height: 16),
-        const SkeletonLoader(height: 200, borderRadius: 24),
-      ]),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SkeletonLoader(height: 90, borderRadius: 24),
+              const SizedBox(height: 16),
+              Row(children: const [
+                Expanded(child: SkeletonLoader(height: 110, borderRadius: 20)),
+                SizedBox(width: 12),
+                Expanded(child: SkeletonLoader(height: 110, borderRadius: 20)),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: const [
+                Expanded(child: SkeletonLoader(height: 90, borderRadius: 20)),
+                SizedBox(width: 12),
+                Expanded(child: SkeletonLoader(height: 90, borderRadius: 20)),
+              ]),
+              const SizedBox(height: 16),
+              const SkeletonLoader(height: 200, borderRadius: 24),
+            ],
+          ),
+        );
+      },
     );
   }
 }

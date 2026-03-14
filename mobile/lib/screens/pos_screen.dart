@@ -156,9 +156,9 @@ class _PosScreenState extends State<PosScreen>
     setState(() => _completing = true);
     try {
       final items = _cart.map<Map<String, dynamic>>((e) => {
-        'product_id': e['product_id'],
-        'quantity': e['quantity'],
-        'unit_price': e['unit_price'],
+        'product_id': toInt(e['product_id']),
+        'quantity': toInt(e['quantity']),
+        'unit_price': (e['unit_price'] as num?)?.toDouble() ?? 0.0,
       }).toList();
       final res = await widget.api.postPosComplete(
         items: items, csrfToken: _csrfToken);
@@ -174,10 +174,16 @@ class _PosScreenState extends State<PosScreen>
         }
       } else {
         setState(() =>
-          _error = (res['error'] ?? 'فشل إتمام البيع').toString());
+          _error = (res['error'] ?? res['data']?['error'] ?? 'فشل إتمام البيع').toString());
       }
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      final msg = body is Map
+          ? (body['error'] ?? body['data']?['error'] ?? 'تعذر الاتصال بالخادم').toString()
+          : (e.response?.statusCode == 400 ? 'طلب غير صالح (تحقق من الكميات أو المخزون)' : 'تعذر الاتصال بالخادم');
+      if (mounted) setState(() => _error = msg);
     } catch (_) {
-      setState(() => _error = 'تعذر الاتصال بالخادم');
+      if (mounted) setState(() => _error = 'تعذر الاتصال بالخادم');
     } finally {
       if (mounted) setState(() => _completing = false);
     }

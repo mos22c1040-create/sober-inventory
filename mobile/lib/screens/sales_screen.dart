@@ -351,7 +351,7 @@ class _SaleCard extends StatelessWidget {
           ],
         ),
         child: Row(
-        children: [
+          children: [
           Container(
             width: 46,
             height: 46,
@@ -425,12 +425,13 @@ class _SaleCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ],
-            ),
-          ],
-        ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
+    ),
     );
   }
 }
