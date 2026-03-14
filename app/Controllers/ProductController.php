@@ -274,10 +274,19 @@ class ProductController extends Controller
 
         if ($isMultipart) {
             $input = $_POST;
+            // صورة مُعالجة من المتصفح (إزالة الخلفية → خلفية بيضاء)
+            $base64 = isset($input['image_base64']) && is_string($input['image_base64']) ? trim($input['image_base64']) : '';
+            if ($base64 !== '') {
+                $saved = $this->saveBase64ProductImage($base64);
+                if ($saved !== null) {
+                    $input['image'] = $saved;
+                }
+            }
+            unset($input['image_base64']);
             $uploadPath = $this->handleProductImageUpload($existingProduct['image'] ?? null);
             if ($uploadPath !== null) {
                 $input['image'] = $uploadPath;
-            } elseif (!empty($existingProduct['image'])) {
+            } elseif (!empty($existingProduct['image']) && empty($input['image'])) {
                 $input['image'] = $existingProduct['image'];
             }
             return $input;
@@ -324,6 +333,27 @@ class ProductController extends Controller
         $name = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $path = $dir . '/' . $name;
         if (!move_uploaded_file($file['tmp_name'], $path)) {
+            return null;
+        }
+        return 'uploads/products/' . $name;
+    }
+
+    /**
+     * Decode base64 image (from browser background-removal), save to uploads/products/, return path or null.
+     */
+    private function saveBase64ProductImage(string $base64): ?string
+    {
+        $raw = base64_decode(strtr($base64, '-_', '+/'), true);
+        if ($raw === false || strlen($raw) < 100) {
+            return null;
+        }
+        $dir = BASE_PATH . '/public/uploads/products';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $name = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.jpg';
+        $path = $dir . '/' . $name;
+        if (@file_put_contents($path, $raw) === false) {
             return null;
         }
         return 'uploads/products/' . $name;

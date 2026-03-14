@@ -37,8 +37,23 @@ $bp             = $basePathSafe ?? '';
                 </div>
                 <div class="flex flex-col gap-2">
                     <input type="file" id="product-image-input" name="image" accept="image/jpeg,image/png,image/webp,image/gif" class="text-sm file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:cursor-pointer" style="color: rgb(var(--foreground));">
-                    <p class="text-xs" style="color: rgb(var(--muted-foreground));">JPEG، PNG، WebP أو GIF. الحد الأقصى 5 ميجابايت.</p>
+                    <input type="hidden" name="image_base64" id="product-image-base64" value="">
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <button type="button" id="btn-remove-bg" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="border-color: rgb(var(--primary)); color: rgb(var(--primary));">
+                            <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+                            <span>إزالة الخلفية (خلفية بيضاء)</span>
+                        </button>
+                        <span id="remove-bg-status" class="text-xs hidden" style="color: rgb(var(--muted-foreground));"></span>
+                    </div>
+                    <p class="text-xs" style="color: rgb(var(--muted-foreground));">JPEG، PNG، WebP أو GIF. الحد الأقصى 5 ميجابايت. اختر صورة ثم اضغط «إزالة الخلفية» لتحويل الخلفية إلى أبيض.</p>
                 </div>
+            </div>
+        </div>
+        <div id="remove-bg-overlay" class="fixed inset-0 z-[300] flex items-center justify-center bg-black/70" style="display: none;">
+            <div class="flex flex-col items-center gap-4 p-6 rounded-2xl max-w-sm shadow-xl" style="background: rgb(var(--card)); border: 1px solid rgb(var(--border));">
+                <div class="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin" style="border-color: rgb(var(--primary));"></div>
+                <p class="text-sm font-semibold" style="color: rgb(var(--foreground));">جاري إزالة الخلفية...</p>
+                <p class="text-xs" style="color: rgb(var(--muted-foreground));">قد يستغرق بضع ثوانٍ في المرة الأولى</p>
             </div>
         </div>
 
@@ -233,8 +248,10 @@ $bp             = $basePathSafe ?? '';
     var imageInput = document.getElementById('product-image-input');
     var imageImg = document.getElementById('product-image-img');
     var imagePlaceholder = document.getElementById('product-image-placeholder');
+    var imageBase64Input = document.getElementById('product-image-base64');
     if (imageInput && imageImg && imagePlaceholder) {
         imageInput.addEventListener('change', function() {
+            imageBase64Input && (imageBase64Input.value = '');
             var file = this.files && this.files[0];
             if (file && file.type.startsWith('image/')) {
                 var r = new FileReader();
@@ -249,6 +266,69 @@ $bp             = $basePathSafe ?? '';
                 imageImg.classList.add('hidden');
                 imagePlaceholder.classList.remove('hidden');
             }
+        });
+    }
+
+    /* ---- إزالة الخلفية (خلفية بيضاء) في المتصفح ---- */
+    var btnRemoveBg = document.getElementById('btn-remove-bg');
+    var overlayBg = document.getElementById('remove-bg-overlay');
+    var statusBg = document.getElementById('remove-bg-status');
+    function showOverlayBg(show) {
+        if (!overlayBg) return;
+        overlayBg.style.display = show ? 'flex' : 'none';
+    }
+    if (btnRemoveBg && imageInput) {
+        btnRemoveBg.addEventListener('click', function() {
+            var file = imageInput.files && imageInput.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                alert('اختر صورة أولاً');
+                return;
+            }
+            btnRemoveBg.disabled = true;
+            if (statusBg) { statusBg.textContent = 'جاري التحميل...'; statusBg.classList.remove('hidden'); }
+            showOverlayBg(true);
+            var imgUrl = URL.createObjectURL(file);
+            function done(err, dataUrl) {
+                URL.revokeObjectURL(imgUrl);
+                showOverlayBg(false);
+                btnRemoveBg.disabled = false;
+                if (statusBg) statusBg.classList.add('hidden');
+                if (err) {
+                    alert(err);
+                    return;
+                }
+                if (dataUrl && imageImg && imageBase64Input) {
+                    var base64 = dataUrl.indexOf(',') >= 0 ? dataUrl.split(',')[1] : dataUrl;
+                    imageBase64Input.value = base64;
+                    imageImg.src = dataUrl;
+                    imageImg.classList.remove('hidden');
+                    if (imagePlaceholder) imagePlaceholder.classList.add('hidden');
+                    imageInput.value = '';
+                }
+            }
+            import('https://esm.sh/@imgly/background-removal@1').then(function(mod) {
+                var removeBackground = mod.default || mod;
+                return removeBackground(imgUrl);
+            }).then(function(blob) {
+                var img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                    var canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    var ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    var dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+                    done(null, dataUrl);
+                };
+                img.onerror = function() { done('تعذر تحميل الصورة الناتجة'); };
+                img.src = URL.createObjectURL(blob);
+            }).catch(function(e) {
+                console.warn(e);
+                done('إزالة الخلفية غير متاحة في هذا المتصفح أو فشل التحميل. يمكنك رفع الصورة كما هي أو استخدام تطبيق الجوال.');
+            });
         });
     }
 
