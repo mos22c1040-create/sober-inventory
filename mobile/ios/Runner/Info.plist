@@ -67,6 +67,8 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>يُستخدم للوصول إلى الكاميرا لمسح الباركود</string>
+	<string>يُستخدم للوصول إلى الكاميرا لمسح الباركود وصورة المنتج</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>يُستخدم لاختيار صورة المنتج من المعرض</string>
 </dict>
 </plist>

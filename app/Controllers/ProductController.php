@@ -94,7 +94,7 @@ class ProductController extends Controller
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
         }
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $input = $this->normalizeProductInput([]);
         $csrf = $input['csrf_token'] ?? '';
         if (!Security::validateCsrfToken($csrf)) {
             $this->jsonResponse(['error' => 'Invalid CSRF token'], 403);
@@ -136,14 +136,14 @@ class ProductController extends Controller
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'Method not allowed'], 405);
         }
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        if (!Security::validateCsrfToken($input['csrf_token'] ?? '')) {
-            $this->jsonResponse(['error' => 'Invalid CSRF token'], 403);
-        }
-        $id = (int) ($input['id'] ?? 0);
+        $id = (int) ($_POST['id'] ?? json_decode((string) file_get_contents('php://input'), true)['id'] ?? 0);
         $product = $id ? Product::find($id) : null;
         if (!$product) {
             $this->jsonResponse(['error' => 'Product not found'], 404);
+        }
+        $input = $this->normalizeProductInput($product);
+        if (!Security::validateCsrfToken($input['csrf_token'] ?? '')) {
+            $this->jsonResponse(['error' => 'Invalid CSRF token'], 403);
         }
         $result = ProductValidator::validate($input);
         if (!$result['valid']) {
@@ -257,6 +257,76 @@ class ProductController extends Controller
             $this->jsonResponse(['barcode' => null]);
         }
         $this->jsonResponse(['barcode' => $result['barcode'], 'time' => $result['time']]);
+    }
+
+    /**
+     * Normalize product form input: support JSON body or multipart/form-data with optional image.
+     * When multipart and a new image is uploaded, saves it under public/uploads/products/ and sets image path.
+     * For update, when no new file is sent, preserves existing product image.
+     *
+     * @param array<string,mixed> $existingProduct Current product row for update (empty for create)
+     * @return array<string,mixed>
+     */
+    private function normalizeProductInput(array $existingProduct): array
+    {
+        $isMultipart = isset($_SERVER['CONTENT_TYPE'])
+            && str_starts_with((string) $_SERVER['CONTENT_TYPE'], 'multipart/form-data');
+
+        if ($isMultipart) {
+            $input = $_POST;
+            $uploadPath = $this->handleProductImageUpload($existingProduct['image'] ?? null);
+            if ($uploadPath !== null) {
+                $input['image'] = $uploadPath;
+            } elseif (!empty($existingProduct['image'])) {
+                $input['image'] = $existingProduct['image'];
+            }
+            return $input;
+        }
+
+        $input = json_decode((string) file_get_contents('php://input'), true) ?? [];
+        return is_array($input) ? $input : [];
+    }
+
+    /**
+     * If a new image was uploaded via $_FILES['image'], validate, save to public/uploads/products/, return path.
+     * Otherwise return null.
+     */
+    private function handleProductImageUpload(?string $existingPath): ?string
+    {
+        if (empty($_FILES['image']['tmp_name']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            return null;
+        }
+        $file = $_FILES['image'];
+        $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = $finfo ? (finfo_file($finfo, $file['tmp_name']) ?: '') : '';
+        if ($finfo) {
+            finfo_close($finfo);
+        }
+        if (!in_array($mime, $allowed, true)) {
+            return null;
+        }
+        $maxSize = 5 * 1024 * 1024; // 5 MB
+        if ($file['size'] > $maxSize) {
+            return null;
+        }
+        $dir = BASE_PATH . '/public/uploads/products';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $ext = match ($mime) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            default => 'jpg',
+        };
+        $name = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $path = $dir . '/' . $name;
+        if (!move_uploaded_file($file['tmp_name'], $path)) {
+            return null;
+        }
+        return 'uploads/products/' . $name;
     }
 }
 

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:google_fonts/google_fonts.dart';
@@ -56,17 +57,32 @@ class _PosScreenState extends State<PosScreen>
   }
 
   Future<void> _loadProducts({String search = ''}) async {
-    setState(() => _loadingProducts = true);
+    setState(() { _loadingProducts = true; _error = null; });
     try {
       final res = await widget.api.getPosProducts(search: search);
       final list = (res['products'] as List<dynamic>?) ?? [];
-      setState(() {
-        _products = list
-            .map((e) => Product.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      });
+      if (mounted) {
+        setState(() {
+          _products = list
+              .map((e) => Product.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+        });
+      }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      // 401: سيتم التوجيه لتسجيل الدخول عبر الـ interceptor — لا نعرض رسالة عامة
+      if (e.response?.statusCode == 401) {
+        setState(() => _error = null);
+        return;
+      }
+      final msg = e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.unknown
+          ? 'تحقق من الاتصال بالإنترنت أو سجّل الدخول من جديد'
+          : 'فشل تحميل المنتجات';
+      setState(() => _error = msg);
     } catch (_) {
-      if (mounted) setState(() => _error = 'فشل تحميل المنتجات');
+      if (mounted) setState(() => _error = 'فشل تحميل المنتجات. تحقق من الاتصال.');
     } finally {
       if (mounted) setState(() => _loadingProducts = false);
     }
@@ -393,8 +409,17 @@ class _PosScreenState extends State<PosScreen>
         const Icon(Icons.error_outline_rounded,
           color: AppColors.error, size: 18),
         const SizedBox(width: 10),
-        Expanded(child: Text(_error ?? '',
-          style: GoogleFonts.cairo(color: AppColors.error, fontSize: 13))),
+        Expanded(
+          child: Text(_error ?? '',
+            style: GoogleFonts.cairo(color: AppColors.error, fontSize: 13))),
+        TextButton(
+          onPressed: () {
+            setState(() => _error = null);
+            _loadProducts();
+          },
+          child: Text('إعادة',
+            style: GoogleFonts.cairo(
+              fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.error))),
         GestureDetector(
           onTap: () => setState(() => _error = null),
           child: const Icon(Icons.close_rounded,

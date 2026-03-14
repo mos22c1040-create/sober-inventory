@@ -188,8 +188,8 @@ class Product
     {
         $db = Database::getInstance();
         $db->query(
-            "INSERT INTO products (category_id, type_id, name, sku, price, cost, quantity, low_stock_threshold, unit, description)
-             VALUES (:category_id, :type_id, :name, :sku, :price, :cost, :quantity, :low_stock_threshold, :unit, :description)",
+            "INSERT INTO products (category_id, type_id, name, sku, price, cost, quantity, low_stock_threshold, unit, description, image)
+             VALUES (:category_id, :type_id, :name, :sku, :price, :cost, :quantity, :low_stock_threshold, :unit, :description, :image)",
             [
                 ':category_id'         => !empty($data['category_id']) ? (int) $data['category_id'] : null,
                 ':type_id'             => !empty($data['type_id']) ? (int) $data['type_id'] : null,
@@ -201,6 +201,7 @@ class Product
                 ':low_stock_threshold' => (int) ($data['low_stock_threshold'] ?? 5),
                 ':unit'                => $data['unit'] ?? 'قطعة',
                 ':description'         => $data['description'] ?? null,
+                ':image'               => isset($data['image']) && $data['image'] !== '' ? $data['image'] : null,
             ]
         );
         return (int) $db->getConnection()->lastInsertId();
@@ -212,7 +213,7 @@ class Product
         $stmt = $db->query(
             "UPDATE products SET category_id = :category_id, type_id = :type_id, name = :name, sku = :sku, price = :price,
               cost = :cost, quantity = :quantity, low_stock_threshold = :low_stock_threshold,
-              unit = :unit, description = :description
+              unit = :unit, description = :description, image = :image
              WHERE id = :id",
             [
                 ':id'                  => $id,
@@ -226,6 +227,7 @@ class Product
                 ':low_stock_threshold' => (int) ($data['low_stock_threshold'] ?? 5),
                 ':unit'                => $data['unit'] ?? 'قطعة',
                 ':description'         => $data['description'] ?? null,
+                ':image'               => isset($data['image']) && $data['image'] !== '' ? $data['image'] : null,
             ]
         );
         return $stmt->rowCount() > 0;
@@ -361,6 +363,7 @@ class Product
                 'low_stock_threshold' => isset($p['low_stock_threshold']) ? (int) $p['low_stock_threshold'] : 5,
                 'unit'                => $p['unit'] ?? 'قطعة',
                 'description'         => $p['description'] ?? null,
+                'image'                => $p['image'] ?? null,
                 'created_at'          => $p['created_at'] ?? null,
                 'updated_at'          => $p['updated_at'] ?? null,
                 'category_name'       => $p['category_name'] ?? null,

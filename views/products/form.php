@@ -18,9 +18,29 @@ $bp             = $basePathSafe ?? '';
         <h1 class="page-title"><?= $product ? 'تعديل المنتج' : 'إضافة منتج' ?></h1>
         <p class="page-subtitle"><?= $product ? 'تحديث بيانات المنتج' : 'إضافة منتج جديد إلى الكتالوج' ?></p>
     </header>
-    <form id="product-form" class="app-card-flat p-6 space-y-4">
+    <form id="product-form" class="app-card-flat p-6 space-y-4" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
         <?php if ($product): ?><input type="hidden" name="id" value="<?= (int)$product['id'] ?>"><?php endif; ?>
+
+        <!-- صورة المنتج -->
+        <div class="rounded-xl p-4 border" style="border-color: rgb(var(--border)); background: rgb(var(--muted));">
+            <label class="block text-sm font-semibold mb-2" style="color: rgb(var(--foreground));">صورة المنتج</label>
+            <div class="flex flex-wrap gap-4 items-start">
+                <div id="product-image-preview" class="w-36 h-36 rounded-xl border-2 flex items-center justify-center overflow-hidden shrink-0 bg-white" style="border-color: rgb(var(--border));">
+                    <?php if (!empty($product['image'])): ?>
+                        <img id="product-image-img" src="<?= $bp ?>/<?= htmlspecialchars($product['image'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="w-full h-full object-cover">
+                        <span id="product-image-placeholder" class="hidden text-sm font-medium" style="color: rgb(var(--muted-foreground));">لا توجد صورة</span>
+                    <?php else: ?>
+                        <img id="product-image-img" src="" alt="" class="w-full h-full object-cover hidden">
+                        <span id="product-image-placeholder" class="text-sm font-medium" style="color: rgb(var(--muted-foreground));">لا توجد صورة</span>
+                    <?php endif; ?>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <input type="file" id="product-image-input" name="image" accept="image/jpeg,image/png,image/webp,image/gif" class="text-sm file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:cursor-pointer" style="color: rgb(var(--foreground));">
+                    <p class="text-xs" style="color: rgb(var(--muted-foreground));">JPEG، PNG، WebP أو GIF. الحد الأقصى 5 ميجابايت.</p>
+                </div>
+            </div>
+        </div>
 
         <div>
             <label class="block text-sm font-semibold mb-1.5" style="color: rgb(var(--foreground));">الاسم *</label>
@@ -209,6 +229,29 @@ $bp             = $basePathSafe ?? '';
     if (btnClose)  btnClose.addEventListener('click', closeCam);
     if (overlay)   overlay.addEventListener('click', function(e) { if (e.target === overlay) closeCam(); });
 
+    /* ---- معاينة صورة المنتج ---- */
+    var imageInput = document.getElementById('product-image-input');
+    var imageImg = document.getElementById('product-image-img');
+    var imagePlaceholder = document.getElementById('product-image-placeholder');
+    if (imageInput && imageImg && imagePlaceholder) {
+        imageInput.addEventListener('change', function() {
+            var file = this.files && this.files[0];
+            if (file && file.type.startsWith('image/')) {
+                var r = new FileReader();
+                r.onload = function() {
+                    imageImg.src = r.result;
+                    imageImg.classList.remove('hidden');
+                    imagePlaceholder.classList.add('hidden');
+                };
+                r.readAsDataURL(file);
+            } else {
+                imageImg.src = '';
+                imageImg.classList.add('hidden');
+                imagePlaceholder.classList.remove('hidden');
+            }
+        });
+    }
+
     /* ---- منع قارئ USB من إرسال النموذج بـ Enter ---- */
     if (skuInput) {
         skuInput.addEventListener('keydown', function(e) {
@@ -216,29 +259,22 @@ $bp             = $basePathSafe ?? '';
         });
     }
 
-    /* ---- حفظ النموذج ---- */
+    /* ---- حفظ النموذج (multipart لدعم صورة المنتج) ---- */
     form.onsubmit = async function(e) {
         e.preventDefault();
-        var data = new FormData(form);
-        var body = {};
-        data.forEach(function(v, k) { body[k] = v; });
-        if (body.id) body.id = parseInt(body.id, 10);
-        body.price = parseFloat(body.price) || 0;
-        body.cost  = parseFloat(body.cost)  || 0;
-        body.quantity = parseInt(body.quantity, 10) || 0;
-        body.low_stock_threshold = parseInt(body.low_stock_threshold, 10) || 5;
-        body.category_id = body.category_id || null;
-        body.unit = body.unit || 'قطعة';
-        body.description = body.description || null;
-        var base = window.APP_BASE || '';
-        var url = body.id ? base + '/api/products/update' : base + '/api/products';
-        var res  = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var base = (window.APP_BASE || '').replace(/\/$/, '');
+        var url = form.querySelector('input[name="id"]') ? base + '/api/products/update' : base + '/api/products';
+        var formData = new FormData(form);
+        var submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'جاري الحفظ...'; }
+        var res = await fetch(url, { method: 'POST', body: formData });
         var json = await res.json();
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = form.querySelector('input[name="id"]') ? 'حفظ التعديلات' : 'إضافة المنتج'; }
         if (json.success && json.redirect) {
-            var base = (window.APP_BASE || '').replace(/\/$/, '');
             window.location.href = base + (json.redirect || '/products');
+        } else {
+            alert(json.error || 'حدث خطأ أثناء الحفظ');
         }
-        else alert(json.error || 'حدث خطأ أثناء الحفظ');
     };
 })();
 </script>

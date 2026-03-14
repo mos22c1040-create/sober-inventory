@@ -49,6 +49,10 @@ class ProductValidator
         $categoryId = !empty($input['category_id']) ? (int) $input['category_id'] : null;
         $typeId     = !empty($input['type_id']) ? (int) $input['type_id'] : null;
 
+        $imagePath = isset($input['image']) && is_string($input['image']) && $input['image'] !== ''
+            ? Security::sanitizeString($input['image'])
+            : null;
+
         $data = [
             'name'                => Security::sanitizeString($name),
             'category_id'         => $categoryId,
@@ -60,6 +64,7 @@ class ProductValidator
             'low_stock_threshold' => $lowStockThreshold,
             'unit'                => isset($input['unit']) ? Security::sanitizeString((string) $input['unit']) : 'قطعة',
             'description'         => isset($input['description']) ? Security::sanitizeString((string) $input['description']) : null,
+            'image'               => $imagePath,
         ];
 
         return [

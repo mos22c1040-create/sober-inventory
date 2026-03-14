@@ -104,6 +104,7 @@ $stockTabs = [
         <table class="min-w-full">
             <thead>
                 <tr style="background: rgb(var(--muted)); border-bottom: 1px solid rgb(var(--border));">
+                    <th class="px-4 py-3.5 text-center text-[10.5px] font-bold uppercase tracking-wider w-16" style="color: rgb(var(--muted-foreground));">الصورة</th>
                     <th class="px-6 py-3.5 text-right text-[10.5px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">المنتج</th>
                     <th class="px-6 py-3.5 text-right text-[10.5px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">الرمز (SKU)</th>
                     <th class="px-6 py-3.5 text-right text-[10.5px] font-bold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">التصنيف</th>
@@ -118,7 +119,7 @@ $stockTabs = [
             <tbody>
                 <?php if (empty($products)): ?>
                 <tr>
-                    <td colspan="<?= $isAdmin ? 7 : 6 ?>" class="px-6 py-16">
+                    <td colspan="<?= $isAdmin ? 8 : 7 ?>" class="px-6 py-16">
                         <div class="empty-state">
                             <div class="empty-state-icon mx-auto"><i class="fa-solid fa-box-open"></i></div>
                             <p class="font-semibold text-sm mb-1" style="color: rgb(var(--muted-foreground));">لا توجد منتجات بعد</p>
@@ -146,6 +147,15 @@ $stockTabs = [
                     data-product-id="<?= (int)$p['id'] ?>"
                     data-sku="<?= htmlspecialchars($p['sku'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 
+                    <td class="px-4 py-3 text-center align-middle">
+                        <?php if (!empty($p['image'])): ?>
+                        <img src="<?= $bp ?>/<?= htmlspecialchars($p['image'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="w-12 h-12 rounded-lg object-cover mx-auto inline-block" style="border: 1px solid rgb(var(--border));">
+                        <?php else: ?>
+                        <div class="w-12 h-12 rounded-lg mx-auto flex items-center justify-center shrink-0" style="background: rgb(var(--muted)); color: rgb(var(--muted-foreground));">
+                            <i class="fa-solid fa-image text-lg"></i>
+                        </div>
+                        <?php endif; ?>
+                    </td>
                     <td class="px-6 py-4">
                         <span class="text-sm font-semibold" style="color: rgb(var(--foreground));">
                             <?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>

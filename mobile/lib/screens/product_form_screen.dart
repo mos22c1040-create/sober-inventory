@@ -1,8 +1,13 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../api/api_client.dart';
-import '../theme/app_theme.dart';
 import '../models/product.dart';
+import '../theme/app_theme.dart';
 import '../utils/api_parse.dart';
+import '../services/background_removal_service.dart';
+import '../widgets/product_image_file.dart';
 import 'barcode_scanner_screen.dart';
 
 class ProductFormScreen extends StatefulWidget {
@@ -33,6 +38,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   bool _saving = false;
   List<Map<String, dynamic>> _types = [];
   int? _selectedTypeId;
+
+  /// Path to the product image (after optional white-background removal). Mobile only.
+  String? _productImagePath;
+  bool _imageProcessing = false;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -141,12 +151,99 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
   }
 
+  void _showImageSourceSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'اختر مصدر الصورة',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                title: const Text('الكاميرا'),
+                onTap: () { Navigator.pop(ctx); _pickAndProcessImage(ImageSource.camera); },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+                title: const Text('المعرض'),
+                onTap: () { Navigator.pop(ctx); _pickAndProcessImage(ImageSource.gallery); },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndProcessImage(ImageSource source) async {
+    try {
+      final XFile? xFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1200,
+        imageQuality: 90,
+      );
+      if (xFile == null || !mounted) return;
+
+      setState(() => _imageProcessing = true);
+
+      String resultPath = xFile.path;
+
+      if (kIsWeb) {
+        if (mounted) {
+          setState(() => _imageProcessing = false);
+          _showImageError('إزالة الخلفية متاحة في تطبيق Android و iOS فقط');
+        }
+        return;
+      }
+
+      try {
+        resultPath = await BackgroundRemovalService.removeBackgroundAndSaveToTemp(xFile.path);
+      } on BackgroundRemovalException catch (e) {
+        if (mounted) _showImageError(e.message);
+        setState(() => _imageProcessing = false);
+        return;
+      }
+
+      if (mounted) setState(() {
+        _productImagePath = resultPath;
+        _imageProcessing = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        _showImageError('تعذر فتح الكاميرا أو المعرض');
+        setState(() => _imageProcessing = false);
+      }
+    }
+  }
+
+  void _showImageError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.product != null;
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: AppColors.bg,
         appBar: AppBar(
           title: Text(isEdit ? 'تعديل المنتج' : 'إضافة منتج جديد'),
@@ -156,13 +253,18 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header banner
-              Container(
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Product image
+                  _buildProductImageSection(),
+                  const SizedBox(height: 24),
+                  // Header banner
+                  Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -239,6 +341,99 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             ],
           ),
         ),
+            if (_imageProcessing)
+              Container(
+                color: Colors.black54,
+                child: const Center(
+                  child: Card(
+                    margin: EdgeInsets.all(32),
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primary),
+                          ),
+                          SizedBox(height: 16),
+                          Text('جاري إزالة الخلفية...', style: TextStyle(fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+    );
+  }
+
+  Widget _buildProductImageSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.image_rounded, color: AppColors.primary, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'صورة المنتج',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          GestureDetector(
+            onTap: _imageProcessing ? null : _showImageSourceSheet,
+            child: Container(
+              height: 180,
+              decoration: BoxDecoration(
+                color: AppColors.bgSecondary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _productImagePath != null
+                  ? SizedBox.expand(child: productImageFile(_productImagePath!))
+                  : Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_photo_alternate_outlined, size: 48, color: AppColors.textTertiary),
+                          const SizedBox(height: 8),
+                          Text(
+                            'اضغط لتحميل صورة مع خلفية بيضاء',
+                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 44,
+            child: OutlinedButton.icon(
+              onPressed: _imageProcessing ? null : _showImageSourceSheet,
+              icon: const Icon(Icons.upload_rounded, size: 20),
+              label: const Text('تحميل صورة'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
