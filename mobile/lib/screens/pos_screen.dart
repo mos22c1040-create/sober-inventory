@@ -92,14 +92,23 @@ class _PosScreenState extends State<PosScreen>
     HapticFeedback.lightImpact();
     setState(() {
       final i = _cart.indexWhere((e) => e['product_id'] == p.id);
+      final stock = p.quantity;
       if (i >= 0) {
-        _cart[i]['quantity'] = toInt(_cart[i]['quantity']) + 1;
+        final cur = toInt(_cart[i]['quantity']);
+        _cart[i]['stock'] = stock;
+        _cart[i]['quantity'] = (cur + 1).clamp(0, stock);
+        if (_cart[i]['quantity'] == cur && cur >= stock && stock > 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showSnack('الكمية المتاحة $stock فقط', isError: true);
+          });
+        }
       } else {
         _cart.add({
           'product_id': p.id,
-          'quantity': 1,
+          'quantity': 1.clamp(0, stock),
           'unit_price': p.price,
           'name': p.name,
+          'stock': stock,
         });
       }
     });
@@ -131,9 +140,18 @@ class _PosScreenState extends State<PosScreen>
   void _updateQty(int i, int delta) {
     HapticFeedback.selectionClick();
     setState(() {
-      final q = toInt(_cart[i]['quantity']) + delta;
-      if (q <= 0) { _cart.removeAt(i); } 
-      else { _cart[i]['quantity'] = q; }
+      final maxQty = toInt(_cart[i]['stock'] ?? 999999);
+      final q = (toInt(_cart[i]['quantity']) + delta).clamp(0, maxQty);
+      if (q <= 0) {
+        _cart.removeAt(i);
+      } else {
+        _cart[i]['quantity'] = q;
+        if (q >= maxQty && delta > 0 && maxQty < 999999) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showSnack('الكمية المتاحة $maxQty فقط', isError: true);
+          });
+        }
+      }
     });
   }
 
@@ -605,7 +623,9 @@ class _PosScreenState extends State<PosScreen>
     final item  = _cart[index];
     final name  = item['name'] as String? ?? 'منتج';
     final qty   = toInt(item['quantity']);
+    final stock = toInt(item['stock'] ?? 999999);
     final price = toDouble(item['unit_price']);
+    final canIncrease = stock > 0 && qty < stock;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -635,6 +655,10 @@ class _PosScreenState extends State<PosScreen>
               Text('${price.toStringAsFixed(0)} د.ع للوحدة',
                 style: GoogleFonts.cairo(
                   fontSize: 12, color: AppColors.textSecondary)),
+              if (stock < 999999)
+                Text('المتاح: $stock',
+                  style: GoogleFonts.cairo(
+                    fontSize: 11, color: AppColors.textHint)),
             ],
           ),
         ),
@@ -660,8 +684,10 @@ class _PosScreenState extends State<PosScreen>
                   color: AppColors.textPrimary))),
             _qtyBtn(
               icon: Icons.add_rounded,
-              color: AppColors.primary,
-              onTap: () => _updateQty(index, 1),
+              color: canIncrease ? AppColors.primary : AppColors.textHint,
+              onTap: canIncrease
+                  ? () => _updateQty(index, 1)
+                  : () => _showSnack('الكمية المتاحة $stock فقط', isError: true),
             ),
           ]),
         ),
