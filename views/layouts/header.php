@@ -48,16 +48,17 @@ $basePathSafe = htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8');
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <?php endif; ?>
     <style>
-        body { font-family: 'Tajawal', sans-serif; font-size: 16px; line-height: 1.6; color: rgb(var(--foreground)); background: rgb(var(--background)); }
-        .touch-target { min-width: 44px; min-height: 44px; }
-        .card-hover { transition: box-shadow var(--duration-normal) var(--ease-out); }
-        .card-hover:hover { box-shadow: var(--shadow-card-hover); }
-        .table-row-hover:hover { background: rgb(var(--muted)); }
-        @media (max-width: 767px) {
-            body.mobile-menu-open #app-sidebar { transform: translateX(0); }
-            body.mobile-menu-open #sidebar-backdrop { display: block !important; }
-            body.mobile-menu-open { overflow: hidden; }
+        body {
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            line-height: 1.65;
+            color: rgb(var(--foreground));
+            background: rgb(var(--background));
         }
+        /* Hover utility used in sidebar links */
+        .hover\:bg-white\/10:hover { background: rgba(255,255,255,.10); }
+        /* Focus ring for search in header */
+        input:focus { outline: none; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden antialiased">

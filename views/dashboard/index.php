@@ -6,175 +6,193 @@ $currencySymbol = $appSettings['currency_symbol'] ?? 'د.ع';
 $isAdmin        = ($_SESSION['role'] ?? '') === 'admin';
 $bp             = $basePathSafe ?? '';
 ?>
+
 <div class="dashboard-page min-h-full w-full">
-<header class="dashboard-hero flex flex-wrap items-center justify-between gap-4">
+
+<!-- ─── Hero Header ──────────────────────────────────────────────────── -->
+<header class="dashboard-hero flex flex-wrap items-center justify-between gap-4 mb-6">
     <div>
-        <h1 class="page-title">لوحة التحكم</h1>
-        <p class="page-subtitle">نظرة عامة على المخزون والمبيعات</p>
+        <div class="flex items-center gap-2.5 mb-1">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                 style="background: rgb(var(--primary-subtle)); color: rgb(var(--primary));">
+                <i class="fa-solid fa-gauge-high text-sm" aria-hidden="true"></i>
+            </div>
+            <h1 class="page-title">لوحة التحكم</h1>
+        </div>
+        <p class="page-subtitle">نظرة عامة على المخزون والمبيعات اليومية</p>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
-        <a href="<?= $bp ?>/pos" class="btn-pos inline-flex items-center gap-2 text-sm text-white focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:outline-none cursor-pointer"
+    <div class="flex flex-wrap items-center gap-2.5">
+        <a href="<?= $bp ?>/pos"
+           class="btn-pos inline-flex items-center gap-2 text-sm text-white focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:outline-none"
            aria-label="فتح نقطة البيع">
             <i class="fa-solid fa-cash-register" aria-hidden="true"></i>
             <span>نقطة البيع</span>
         </a>
         <?php if ($isAdmin): ?>
-        <a href="<?= $bp ?>/reports" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer"
-           style="background: rgb(219 234 254); color: rgb(var(--primary)); border: 1.5px solid rgb(var(--border));">
-            <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+        <a href="<?= $bp ?>/reports"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all btn-secondary focus:outline-none">
+            <i class="fa-solid fa-chart-pie text-xs" aria-hidden="true"></i>
             <span>التقارير</span>
         </a>
         <?php endif; ?>
     </div>
 </header>
 
-<!-- ─── Stats Row ─────────────────────────────────────────────────────── -->
-<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-7 stagger-children">
+<!-- ─── Stats Grid ────────────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6 stagger-children">
 
     <!-- مبيعات اليوم -->
     <div class="stat-card">
-        <div class="flex items-start justify-between mb-3">
-            <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                 style="background: rgb(219 234 254); color: rgb(var(--primary));">
-                <i class="fa-solid fa-money-bill-wave text-lg" aria-hidden="true"></i>
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                 style="background: rgb(var(--primary-subtle)); color: rgb(var(--primary));">
+                <i class="fa-solid fa-arrow-trend-up text-base" aria-hidden="true"></i>
             </div>
             <span class="badge badge-info">اليوم</span>
         </div>
-        <p class="text-[11px] font-bold uppercase tracking-widest mb-1" style="color: rgb(var(--muted-foreground));">مبيعات اليوم</p>
-        <h3 class="stat-value text-2xl font-extrabold" style="color: rgb(var(--foreground));">
+        <p class="text-[10.5px] font-bold uppercase tracking-widest mb-1.5" style="color: rgb(var(--muted-foreground));">مبيعات اليوم</p>
+        <h3 class="stat-value text-2xl font-extrabold mb-2" style="color: rgb(var(--foreground));">
             <?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($todaySales ?? 0), 0) ?>
         </h3>
-        <p class="mt-2 text-xs font-semibold" style="color: rgb(var(--muted-foreground));">
-            <i class="fa-solid fa-receipt me-1" aria-hidden="true"></i><?= (int)($todayCount ?? 0) ?> فاتورة
-        </p>
+        <div class="flex items-center gap-1.5 text-xs font-medium" style="color: rgb(var(--muted-foreground));">
+            <i class="fa-solid fa-receipt text-[10px]" aria-hidden="true"></i>
+            <span><?= (int)($todayCount ?? 0) ?> فاتورة مكتملة</span>
+        </div>
         <?php
         $yesterdaySales = (float)($yesterdaySales ?? 0);
         $yesterdayCount  = (int)($yesterdayCount ?? 0);
-        if ($yesterdaySales > 0 || $yesterdayCount > 0):
-            $salesDiff = $yesterdaySales > 0 ? round((((float)($todaySales ?? 0) - $yesterdaySales) / $yesterdaySales) * 100, 1) : 0;
-            $countDiff = $yesterdayCount > 0 ? (int)($todayCount ?? 0) - $yesterdayCount : 0;
+        if ($yesterdaySales > 0):
+            $salesDiff = round((((float)($todaySales ?? 0) - $yesterdaySales) / $yesterdaySales) * 100, 1);
         ?>
-        <p class="mt-1.5 text-[11px] font-medium" style="color: rgb(var(--muted-foreground));">
-            <i class="fa-solid fa-arrow-trend-up me-1" aria-hidden="true"></i>
-            مقارنة بأمس: <?= $salesDiff >= 0 ? '+' : '' ?><?= $salesDiff ?>% إيراد · <?= $countDiff >= 0 ? '+' : '' ?><?= $countDiff ?> فاتورة
-        </p>
+        <div class="mt-3 pt-3 flex items-center gap-1.5 text-[11px] font-semibold" style="border-top: 1px solid rgb(var(--border)); color: <?= $salesDiff >= 0 ? 'rgb(var(--color-success))' : 'rgb(var(--color-danger))' ?>;">
+            <i class="fa-solid fa-arrow-<?= $salesDiff >= 0 ? 'up' : 'down' ?>-long" aria-hidden="true"></i>
+            <?= $salesDiff >= 0 ? '+' : '' ?><?= $salesDiff ?>% مقارنة بالأمس
+        </div>
         <?php endif; ?>
     </div>
 
     <!-- عدد الفواتير -->
     <div class="stat-card">
-        <div class="flex items-start justify-between mb-3">
-            <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                  style="background: rgb(var(--color-success-light)); color: rgb(var(--color-success));">
-                <i class="fa-solid fa-receipt text-lg" aria-hidden="true"></i>
+                <i class="fa-solid fa-receipt text-base" aria-hidden="true"></i>
             </div>
             <span class="badge badge-success">مكتملة</span>
         </div>
-        <p class="text-[11px] font-bold uppercase tracking-widest mb-1" style="color: rgb(var(--muted-foreground));">عدد الفواتير</p>
-        <h3 class="stat-value text-2xl font-extrabold" style="color: rgb(var(--foreground));">
+        <p class="text-[10.5px] font-bold uppercase tracking-widest mb-1.5" style="color: rgb(var(--muted-foreground));">عدد الفواتير</p>
+        <h3 class="stat-value text-2xl font-extrabold mb-2" style="color: rgb(var(--foreground));">
             <?= (int)($todayCount ?? 0) ?>
         </h3>
-        <p class="mt-2 text-xs font-semibold" style="color: rgb(var(--muted-foreground));">
-            <i class="fa-solid fa-clock me-1" aria-hidden="true"></i>المبيعات المكتملة اليوم
-        </p>
+        <div class="flex items-center gap-1.5 text-xs font-medium" style="color: rgb(var(--muted-foreground));">
+            <i class="fa-regular fa-clock text-[10px]" aria-hidden="true"></i>
+            <span>المبيعات المكتملة اليوم</span>
+        </div>
     </div>
 
     <!-- إجمالي المنتجات -->
     <div class="stat-card">
-        <div class="flex items-start justify-between mb-3">
-            <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                  style="background: rgb(237 233 254); color: rgb(109 40 217);">
-                <i class="fa-solid fa-boxes-stacked text-lg" aria-hidden="true"></i>
+                <i class="fa-solid fa-boxes-stacked text-base" aria-hidden="true"></i>
             </div>
             <span class="badge" style="background: rgb(237 233 254); color: rgb(109 40 217);">الكتالوج</span>
         </div>
-        <p class="text-[11px] font-bold uppercase tracking-widest mb-1" style="color: rgb(var(--muted-foreground));">إجمالي المنتجات</p>
-        <h3 class="stat-value text-2xl font-extrabold" style="color: rgb(var(--foreground));">
+        <p class="text-[10.5px] font-bold uppercase tracking-widest mb-1.5" style="color: rgb(var(--muted-foreground));">إجمالي المنتجات</p>
+        <h3 class="stat-value text-2xl font-extrabold mb-2" style="color: rgb(var(--foreground));">
             <?= (int)($productCount ?? 0) ?>
         </h3>
-        <p class="mt-2 text-xs font-semibold flex items-center gap-1.5" style="color: rgb(var(--muted-foreground));">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block" aria-hidden="true"></span>نشطة في المخزون
-        </p>
+        <div class="flex items-center gap-1.5 text-xs font-medium" style="color: rgb(var(--muted-foreground));">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block" aria-hidden="true"></span>
+            <span>نشطة في المخزون</span>
+        </div>
     </div>
 
     <!-- منخفضة المخزون -->
     <div class="stat-card" style="border-color: rgb(254 202 202);">
-        <div class="absolute inset-0 rounded-xl opacity-30 pointer-events-none"
-             style="background: linear-gradient(135deg, rgb(254 226 226) 0%, transparent 60%);"></div>
-        <div class="relative z-10">
-            <div class="flex items-start justify-between mb-3">
-                <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                     style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
-                    <i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i>
-                </div>
-                <span class="badge badge-danger">تنبيه</span>
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                 style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
+                <i class="fa-solid fa-triangle-exclamation text-base" aria-hidden="true"></i>
             </div>
-            <p class="text-[11px] font-bold uppercase tracking-widest mb-1" style="color: rgb(var(--color-danger));">منخفضة المخزون</p>
-            <h3 class="stat-value text-2xl font-extrabold" style="color: rgb(var(--foreground));">
-                <?= (int)($lowStockCount ?? 0) ?>
-            </h3>
-            <a href="<?= $bp ?>/products" class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200 cursor-pointer"
-               style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
-                إعادة تخزين <i class="fa-solid fa-arrow-left text-[10px]" aria-hidden="true"></i>
-            </a>
+            <span class="badge badge-danger">تنبيه</span>
         </div>
+        <p class="text-[10.5px] font-bold uppercase tracking-widest mb-1.5" style="color: rgb(var(--color-danger));">منخفضة المخزون</p>
+        <h3 class="stat-value text-2xl font-extrabold mb-2" style="color: rgb(var(--foreground));">
+            <?= (int)($lowStockCount ?? 0) ?>
+        </h3>
+        <a href="<?= $bp ?>/products"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+           style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
+            <i class="fa-solid fa-boxes-stacked text-[10px]" aria-hidden="true"></i>
+            إعادة تخزين
+        </a>
     </div>
 </div>
 
 <?php
 $lowStockList = $lowStockProducts ?? [];
-$hasLowStock = ($lowStockCount ?? 0) > 0;
+$hasLowStock  = ($lowStockCount ?? 0) > 0;
 ?>
 <?php if ($hasLowStock && !empty($lowStockList)): ?>
-<!-- ─── تنبيهات المخزون ───────────────────────────────────────────────── -->
-<div class="app-card-flat p-5 mb-5 animate-slide-up" style="animation-delay:50ms; border-color: rgb(254 202 202);">
+<!-- ─── Low Stock Alert ───────────────────────────────────────────────── -->
+<div class="app-card-flat p-5 mb-6 animate-slide-up" style="border-color: rgb(254 202 202);">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div class="flex items-center gap-2">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
-                <i class="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i>
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                 style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
             </div>
             <div>
-                <h3 class="text-base font-bold" style="color: rgb(var(--foreground));">تنبيهات المخزون</h3>
-                <p class="text-xs font-medium" style="color: rgb(var(--muted-foreground));">منتجات تحتاج إعادة تخزين</p>
+                <h3 class="text-sm font-bold" style="color: rgb(var(--foreground));">تنبيهات المخزون</h3>
+                <p class="text-xs font-medium mt-0.5" style="color: rgb(var(--muted-foreground));">
+                    <?= count($lowStockList) ?> منتج يحتاج إعادة تخزين
+                </p>
             </div>
         </div>
-        <a href="<?= $bp ?>/products" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+        <a href="<?= $bp ?>/products"
+           class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all"
            style="background: rgb(var(--color-danger-light)); color: rgb(var(--color-danger));">
-            <i class="fa-solid fa-boxes-stacked text-xs" aria-hidden="true"></i>
-            عرض المنتجات
+            <i class="fa-solid fa-arrow-left text-[10px]" aria-hidden="true"></i>
+            عرض الكل
         </a>
     </div>
     <div class="flex flex-wrap gap-2">
         <?php foreach (array_slice($lowStockList, 0, 10) as $p): ?>
-        <a href="<?= $bp ?>/products" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer"
+        <a href="<?= $bp ?>/products"
+           class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all"
            style="border-color: rgb(254 202 202); background: rgb(255 247 247); color: rgb(var(--foreground));">
-            <span class="font-medium truncate max-w-[140px]"><?= htmlspecialchars($p['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
-            <span class="badge badge-danger shrink-0"><?= (int)($p['quantity'] ?? 0) ?> / <?= (int)($p['low_stock_threshold'] ?? 0) ?></span>
+            <span class="truncate max-w-[120px]"><?= htmlspecialchars($p['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="badge badge-danger shrink-0 text-[10px]"><?= (int)($p['quantity'] ?? 0) ?></span>
         </a>
         <?php endforeach; ?>
         <?php if (count($lowStockList) > 10): ?>
-        <span class="inline-flex items-center px-3 py-2 text-xs font-semibold" style="color: rgb(var(--muted-foreground));">+<?= count($lowStockList) - 10 ?> أخرى</span>
+        <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg"
+              style="color: rgb(var(--muted-foreground)); background: rgb(var(--muted));">
+            +<?= count($lowStockList) - 10 ?> منتج آخر
+        </span>
         <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>
 
-<!-- ─── Chart + Recent Sales ──────────────────────────────────────────── -->
+<!-- ─── Chart + Recent Sales ─────────────────────────────────────────── -->
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
-    <!-- مخطط المبيعات -->
-    <div class="xl:col-span-2 app-card-flat p-5 flex flex-col animate-slide-up" style="animation-delay:100ms;">
-        <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
+    <!-- Sales Chart -->
+    <div class="xl:col-span-2 app-card-flat p-6 flex flex-col animate-slide-up" style="animation-delay: 80ms;">
+        <div class="flex flex-wrap justify-between items-start gap-3 mb-5">
             <div>
-                <h3 class="text-base font-bold" style="color: rgb(var(--foreground));">نظرة عامة على المبيعات</h3>
-                <p class="text-xs font-medium mt-0.5" style="color: rgb(var(--muted-foreground));">إيرادات آخر 7 أيام</p>
+                <h3 class="text-sm font-bold" style="color: rgb(var(--foreground));">نظرة عامة على الإيرادات</h3>
+                <p class="text-xs font-medium mt-0.5" style="color: rgb(var(--muted-foreground));">آخر 7 أيام</p>
             </div>
             <?php
             $chartDays = $dailyTotals ?? [];
             $weekTotal = array_sum(array_column($chartDays, 'total'));
             ?>
             <div class="text-end">
-                <p class="text-[11px] font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">إجمالي الأسبوع</p>
+                <p class="text-[10.5px] font-semibold uppercase tracking-wider" style="color: rgb(var(--muted-foreground));">إجمالي الأسبوع</p>
                 <p class="text-xl font-extrabold mt-0.5 stat-value" style="color: rgb(var(--primary));">
                     <?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)$weekTotal, 0) ?>
                 </p>
@@ -190,27 +208,27 @@ $hasLowStock = ($lowStockCount ?? 0) > 0;
             var sym    = <?= json_encode($currencySymbol, JSON_UNESCAPED_UNICODE) ?>;
             var canvas = document.getElementById('salesChart');
             if (!canvas || typeof Chart === 'undefined') return;
-            var ctx = canvas.getContext('2d');
-            var grad = ctx.createLinearGradient(0, 0, 0, 280);
-            grad.addColorStop(0, 'rgba(37,99,235,0.18)');
-            grad.addColorStop(0.7, 'rgba(37,99,235,0.04)');
-            grad.addColorStop(1, 'rgba(37,99,235,0)');
+            var ctx  = canvas.getContext('2d');
+            var grad = ctx.createLinearGradient(0, 0, 0, 260);
+            grad.addColorStop(0,   'rgba(79,70,229,0.14)');
+            grad.addColorStop(0.7, 'rgba(79,70,229,0.03)');
+            grad.addColorStop(1,   'rgba(79,70,229,0)');
             new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
                         data: values,
-                        borderColor: 'rgb(37,99,235)',
+                        borderColor: 'rgb(79,70,229)',
                         backgroundColor: grad,
-                        borderWidth: 2.5,
+                        borderWidth: 2,
                         pointBackgroundColor: '#fff',
-                        pointBorderColor: 'rgb(37,99,235)',
+                        pointBorderColor: 'rgb(79,70,229)',
                         pointBorderWidth: 2,
                         pointRadius: 4,
-                        pointHoverRadius: 7,
-                        pointHoverBackgroundColor: 'rgb(37,99,235)',
-                        tension: 0.45,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: 'rgb(79,70,229)',
+                        tension: 0.42,
                         fill: true
                     }]
                 },
@@ -222,10 +240,12 @@ $hasLowStock = ($lowStockCount ?? 0) > 0;
                         tooltip: {
                             rtl: true,
                             padding: 10,
-                            backgroundColor: 'rgb(15 23 42)',
-                            titleColor: 'rgb(148 163 184)',
+                            backgroundColor: 'rgb(9,11,17)',
+                            titleColor: 'rgb(156,163,175)',
                             bodyColor: '#fff',
                             cornerRadius: 10,
+                            borderColor: 'rgba(255,255,255,.06)',
+                            borderWidth: 1,
                             callbacks: {
                                 label: function(ctx) { return ' ' + sym + ' ' + ctx.parsed.y.toLocaleString(); }
                             }
@@ -235,14 +255,14 @@ $hasLowStock = ($lowStockCount ?? 0) > 0;
                         x: {
                             grid: { display: false },
                             border: { display: false },
-                            ticks: { font: { family: 'Tajawal, sans-serif', size: 11 }, color: 'rgb(100 116 139)' }
+                            ticks: { font: { family: 'Tajawal, sans-serif', size: 11 }, color: 'rgb(107,114,128)' }
                         },
                         y: {
                             grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
                             border: { display: false },
                             ticks: {
                                 font: { family: 'Tajawal, sans-serif', size: 11 },
-                                color: 'rgb(100 116 139)',
+                                color: 'rgb(107,114,128)',
                                 callback: function(v) { return sym + ' ' + Number(v).toLocaleString(); }
                             }
                         }
@@ -253,55 +273,58 @@ $hasLowStock = ($lowStockCount ?? 0) > 0;
         </script>
     </div>
 
-    <!-- آخر المبيعات -->
-    <div class="app-card-flat p-5 flex flex-col animate-slide-up" style="animation-delay:200ms;">
+    <!-- Recent Sales -->
+    <div class="app-card-flat p-5 flex flex-col animate-slide-up" style="animation-delay: 160ms;">
         <div class="flex justify-between items-center mb-4">
             <div>
-                <h3 class="text-base font-bold" style="color: rgb(var(--foreground));">آخر المبيعات</h3>
-                <p class="text-xs font-medium mt-0.5" style="color: rgb(var(--muted-foreground));">أحدث الفواتير المسجّلة</p>
+                <h3 class="text-sm font-bold" style="color: rgb(var(--foreground));">آخر المبيعات</h3>
+                <p class="text-xs font-medium mt-0.5" style="color: rgb(var(--muted-foreground));">أحدث الفواتير</p>
             </div>
             <a href="<?= $bp ?><?= $isAdmin ? '/reports' : '/sales' ?>"
-               class="w-9 h-9 flex items-center justify-center rounded-xl transition-colors duration-200 focus:ring-2 focus:ring-blue-400 cursor-pointer"
-               style="background: rgb(219 234 254); color: rgb(var(--primary));"
+               class="w-8 h-8 flex items-center justify-center rounded-xl transition-all"
+               style="background: rgb(var(--primary-subtle)); color: rgb(var(--primary));"
                aria-label="<?= $isAdmin ? 'التقارير' : 'المبيعات' ?>">
-                <i class="fa-solid fa-<?= $isAdmin ? 'chart-pie' : 'list' ?> text-sm" aria-hidden="true"></i>
+                <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i>
             </a>
         </div>
 
-        <div class="flex-1 overflow-y-auto space-y-2 min-h-[200px]">
+        <div class="flex-1 overflow-y-auto space-y-1.5 min-h-[200px]">
             <?php
             $recentSales = $recentSales ?? [];
             if (empty($recentSales)):
             ?>
-            <div class="empty-state py-8">
+            <div class="empty-state py-10">
                 <div class="empty-state-icon"><i class="fa-solid fa-receipt"></i></div>
-                <p class="text-sm font-medium">لا توجد مبيعات حديثة</p>
-                <a href="<?= $bp ?>/sales/create" class="inline-block mt-3 text-sm font-bold text-blue-600 hover:text-blue-700">إنشاء فاتورة</a>
+                <p class="text-sm font-semibold mb-1">لا توجد مبيعات حديثة</p>
+                <a href="<?= $bp ?>/sales/create" class="text-sm font-bold" style="color: rgb(var(--primary));">إنشاء فاتورة</a>
             </div>
             <?php else: ?>
             <?php foreach ($recentSales as $sale):
                 $payMethod = $sale['payment_method'] ?? 'cash';
                 $payLabel  = $payMethod === 'card' ? 'بطاقة' : ($payMethod === 'mixed' ? 'مختلط' : 'نقدي');
-                $statusBg  = $sale['status'] === 'paid' ? 'badge-success' : ($sale['status'] === 'pending' ? 'badge-warning' : 'badge-neutral');
+                $statusClass = $sale['status'] === 'paid' ? 'badge-success' : ($sale['status'] === 'pending' ? 'badge-warning' : 'badge-neutral');
             ?>
-            <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl transition-colors duration-150 hover:bg-slate-50 cursor-default group">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105"
+            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group"
+                 style="border: 1px solid transparent;"
+                 onmouseover="this.style.background='rgb(var(--muted))'; this.style.borderColor='rgb(var(--border))'"
+                 onmouseout="this.style.background=''; this.style.borderColor='transparent'">
+                <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                      style="background: rgb(var(--color-success-light)); color: rgb(var(--color-success));">
-                    <i class="fa-solid fa-receipt text-sm" aria-hidden="true"></i>
+                    <i class="fa-solid fa-receipt text-xs" aria-hidden="true"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-bold truncate" style="color: rgb(var(--foreground));">
+                    <p class="text-xs font-bold truncate" style="color: rgb(var(--foreground));">
                         <?= htmlspecialchars($sale['invoice_number'] ?? '', ENT_QUOTES, 'UTF-8') ?>
                     </p>
-                    <p class="text-xs truncate" style="color: rgb(var(--muted-foreground));">
+                    <p class="text-[10.5px] truncate" style="color: rgb(var(--muted-foreground));">
                         <?= htmlspecialchars($sale['customer_name'] ?? 'زائر', ENT_QUOTES, 'UTF-8') ?>
                     </p>
                 </div>
                 <div class="text-end shrink-0">
-                    <p class="text-sm font-bold" style="color: rgb(var(--foreground));">
+                    <p class="text-xs font-extrabold stat-value" style="color: rgb(var(--foreground));">
                         <?= htmlspecialchars($currencySymbol, ENT_QUOTES, 'UTF-8') ?> <?= number_format((float)($sale['total'] ?? 0), 0) ?>
                     </p>
-                    <span class="badge <?= $statusBg ?> mt-0.5"><?= $payLabel ?></span>
+                    <span class="badge <?= $statusClass ?> mt-0.5"><?= $payLabel ?></span>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -309,13 +332,13 @@ $hasLowStock = ($lowStockCount ?? 0) > 0;
         </div>
 
         <a href="<?= $bp ?><?= $isAdmin ? '/reports' : '/sales' ?>"
-           class="mt-4 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 border-2 hover:text-blue-600 cursor-pointer"
-           style="border-color: rgb(var(--border)); color: rgb(var(--muted-foreground));">
-            <i class="fa-solid fa-list text-xs" aria-hidden="true"></i>
+           class="mt-4 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all btn-secondary focus:outline-none">
+            <i class="fa-solid fa-list text-[10px]" aria-hidden="true"></i>
             عرض كل المبيعات
         </a>
     </div>
 </div>
+
 </div><!-- .dashboard-page -->
 
 <?php require BASE_PATH . '/views/layouts/footer.php'; ?>

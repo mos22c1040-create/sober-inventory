@@ -39,7 +39,7 @@
         function setIcon() {
             if (!icon) return;
             var dark = root.getAttribute('data-theme') === 'dark';
-            icon.className = 'fa-solid text-sm ' + (dark ? 'fa-sun' : 'fa-moon');
+            icon.className = 'fa-solid text-xs ' + (dark ? 'fa-sun' : 'fa-moon');
         }
         if (btn) {
             btn.addEventListener('click', function() {
