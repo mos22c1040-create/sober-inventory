@@ -261,14 +261,146 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-        child: _actionRow(
-          icon: Icons.refresh_rounded,
-          label: 'تحديث البيانات',
-          color: AppColors.success,
-          onTap: _load,
+        child: Column(
+          children: [
+            _actionRow(
+              icon: Icons.refresh_rounded,
+              label: 'تحديث البيانات',
+              color: AppColors.success,
+              onTap: _load,
+            ),
+            _divider(),
+            _actionRow(
+              icon: Icons.lock_rounded,
+              label: 'تغيير كلمة المرور',
+              color: AppColors.primary,
+              onTap: _showChangePasswordDialog,
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _showChangePasswordDialog() async {
+    final currentCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('تغيير كلمة المرور'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextFormField(
+                    controller: currentCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'كلمة المرور الحالية',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'مطلوب' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: newCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'كلمة المرور الجديدة',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'مطلوب';
+                      if (v.length < 8) return '8 أحرف على الأقل';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: confirmCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'تأكيد كلمة المرور',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'مطلوب';
+                      if (v != newCtrl.text) return 'غير متطابقة';
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (!(formKey.currentState?.validate() ?? false)) return;
+                final current = currentCtrl.text;
+                final newPw = newCtrl.text;
+                final confirm = confirmCtrl.text;
+                final csrf = await widget.api.getCsrfToken();
+                try {
+                  final res = await widget.api.updateProfilePassword(
+                    currentPassword: current,
+                    newPassword: newPw,
+                    confirmPassword: confirm,
+                    csrfToken: csrf,
+                  );
+                  final success = res['success'] == true;
+                  final err = res['error'] ?? res['data']?['error'];
+                  if (!mounted) return;
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success
+                            ? 'تم تغيير كلمة المرور بنجاح'
+                            : (err?.toString() ?? 'حدث خطأ'),
+                      ),
+                      backgroundColor:
+                          success ? AppColors.success : AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } catch (_) {
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('تعذر الاتصال'),
+                        backgroundColor: AppColors.error,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+    currentCtrl.dispose();
+    newCtrl.dispose();
+    confirmCtrl.dispose();
   }
 
   Widget _buildLogoutButton() {

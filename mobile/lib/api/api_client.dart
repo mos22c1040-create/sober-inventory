@@ -176,6 +176,52 @@ class ApiClient {
     await _dio.post<dynamic>('/api/logout');
   }
 
+  /// POST /api/profile/password — تغيير كلمة مرور المستخدم الحالي
+  Future<Map<String, dynamic>> updateProfilePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+    required String csrfToken,
+  }) async {
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/api/profile/password',
+      data: {
+        'current_password': currentPassword,
+        'new_password': newPassword,
+        'confirm_password': confirmPassword,
+        'csrf_token': csrfToken,
+      },
+      options: Options(contentType: Headers.jsonContentType),
+    );
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  /// GET /reports/export/sales — تصدير المبيعات CSV (bytes، يتطلب صلاحية مدير)
+  Future<List<int>> getReportExportSalesBytes({
+    required String from,
+    required String to,
+  }) async {
+    final r = await _dio.get<List<int>>(
+      '/reports/export/sales',
+      queryParameters: {'from': from, 'to': to},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return r.data ?? [];
+  }
+
+  /// GET /reports/export/products — تصدير المنتجات الأكثر مبيعاً CSV (bytes)
+  Future<List<int>> getReportExportProductsBytes({
+    required String from,
+    required String to,
+  }) async {
+    final r = await _dio.get<List<int>>(
+      '/reports/export/products',
+      queryParameters: {'from': from, 'to': to},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return r.data ?? [];
+  }
+
   // ── Sales ────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getSales({int page = 1, int perPage = 25}) async {

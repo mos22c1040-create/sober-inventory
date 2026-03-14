@@ -60,6 +60,9 @@ dependencies:
   google_mlkit_selfie_segmentation: ^0.6.0
   image: ^4.1.3
 
+  # Share / export (reports CSV)
+  share_plus: ^10.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

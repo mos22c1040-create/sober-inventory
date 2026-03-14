@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
 import '../utils/api_parse.dart';
@@ -14,6 +16,7 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   bool _loading = true;
+  bool _exporting = false;
   Map<String, dynamic> _data = {};
   List<Map<String, dynamic>> _lowStockProducts = [];
   DateTime _from = DateTime.now().subtract(const Duration(days: 30));
@@ -106,6 +109,29 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      // تصدير CSV (مثل الموقع)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _exporting ? null : () => _exportCsv(isSales: true),
+                              icon: _exporting ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.file_download_rounded, size: 18),
+                              label: const Text('تصدير المبيعات CSV'),
+                              style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _exporting ? null : () => _exportCsv(isSales: false),
+                              icon: const Icon(Icons.table_chart_rounded, size: 18),
+                              label: const Text('تصدير المنتجات CSV'),
+                              style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
 
@@ -302,6 +328,45 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
       ),
     );
+  }
+
+  Future<void> _exportCsv({required bool isSales}) async {
+    if (_exporting) return;
+    setState(() => _exporting = true);
+    final from = _from.toIso8601String().substring(0, 10);
+    final to = _to.toIso8601String().substring(0, 10);
+    try {
+      final bytes = isSales
+          ? await widget.api.getReportExportSalesBytes(from: from, to: to)
+          : await widget.api.getReportExportProductsBytes(from: from, to: to);
+      if (!mounted) return;
+      if (bytes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لا توجد بيانات للتصدير أو الصلاحية غير كافية'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        setState(() => _exporting = false);
+        return;
+      }
+      final name = isSales ? 'sales_$from\_$to.csv' : 'products_$from\_$to.csv';
+      final xfile = XFile.fromData(bytes, name: name);
+      await Share.shareXFiles([xfile], text: isSales ? 'تقرير المبيعات' : 'أكثر المنتجات مبيعاً');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تعذر التصدير: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
   }
 
   Future<void> _pickDateRange() async {

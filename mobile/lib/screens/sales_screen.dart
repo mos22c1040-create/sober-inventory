@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
 import '../utils/api_parse.dart';
+import 'sale_detail_screen.dart';
+import 'pos_screen.dart';
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key, required this.api});
@@ -108,6 +110,19 @@ class _SalesScreenState extends State<SalesScreen> {
             icon: const Icon(Icons.arrow_back_ios_rounded),
             onPressed: () => Navigator.pop(context),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add_circle_rounded, color: AppColors.primary, size: 26),
+              tooltip: 'فاتورة جديدة',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => PosScreen(api: widget.api),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         body: RefreshIndicator(
           color: AppColors.primary,
@@ -161,6 +176,16 @@ class _SalesScreenState extends State<SalesScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) => _SaleCard(
                         sale: _sales[i],
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => SaleDetailScreen(
+                                api: widget.api,
+                                saleId: toInt(_sales[i]['id']),
+                              ),
+                            ),
+                          );
+                        },
                         onCancel: _csrfToken.isNotEmpty
                             ? () async {
                                 final confirm = await showDialog<bool>(
@@ -292,9 +317,14 @@ class _SalesScreenState extends State<SalesScreen> {
 }
 
 class _SaleCard extends StatelessWidget {
-  const _SaleCard({required this.sale, required this.onCancel});
+  const _SaleCard({
+    required this.sale,
+    required this.onTap,
+    required this.onCancel,
+  });
 
   final Map<String, dynamic> sale;
+  final VoidCallback onTap;
   final VoidCallback? onCancel;
 
   @override
@@ -306,18 +336,21 @@ class _SaleCard extends StatelessWidget {
     final statusLabel = isPaid ? 'مدفوعة' : 'ملغاة';
     final total = toDouble(sale['total']).toStringAsFixed(0);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 10)
-        ],
-      ),
-      child: Row(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04), blurRadius: 10)
+          ],
+        ),
+        child: Row(
         children: [
           Container(
             width: 46,
@@ -392,11 +425,11 @@ class _SaleCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                ],
-              ),
-            ],
-          ),
-        ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
