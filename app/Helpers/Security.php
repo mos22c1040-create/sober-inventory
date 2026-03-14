@@ -42,16 +42,16 @@ class Security
         header('Permissions-Policy: camera=(self), geolocation=(), microphone=(), payment=()');
 
         // Content-Security-Policy: restricts resource loading origins to self + trusted CDNs.
-        // script-src allows jsdelivr (Chart.js), fonts.googleapis.com, cdnjs (html5-qrcode).
+        // script-src allows jsdelivr (Chart.js), cdnjs (html5-qrcode), esm.sh (background-removal).
         // style-src allows Google Fonts and inline styles required by Tailwind.
         header(
             "Content-Security-Policy: " .
             "default-src 'self'; " .
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; " .
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://esm.sh; " .
             "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; " .
             "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
             "img-src 'self' data: blob: https:; " .
-            "connect-src 'self' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; " .
+            "connect-src 'self' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://esm.sh; " .
             "frame-ancestors 'none';"
         );
 
