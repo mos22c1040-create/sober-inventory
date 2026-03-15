@@ -42,7 +42,7 @@ class Security
         header('Permissions-Policy: camera=(self), geolocation=(), microphone=(), payment=()');
 
         // Content-Security-Policy: restricts resource loading origins to self + trusted CDNs.
-        // script-src allows jsdelivr (Chart.js), cdnjs (html5-qrcode), esm.sh (background-removal).
+        // script-src allows jsdelivr (Chart.js), cdnjs (html5-qrcode).
         // style-src allows Google Fonts and inline styles required by Tailwind.
         header(
             "Content-Security-Policy: " .

@@ -274,7 +274,7 @@ class ProductController extends Controller
 
         if ($isMultipart) {
             $input = $_POST;
-            // صورة مُعالجة في المتصفح (إزالة خلفية مجانية → base64)
+            // صورة اختيارية كـ base64 (للتوافق مع أي عميل قديم)
             $base64 = isset($input['image_base64']) && is_string($input['image_base64']) ? trim($input['image_base64']) : '';
             if ($base64 !== '') {
                 $saved = $this->saveBase64ProductImage($base64);

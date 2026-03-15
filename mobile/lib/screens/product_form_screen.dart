@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -6,7 +5,6 @@ import '../api/api_client.dart';
 import '../models/product.dart';
 import '../theme/app_theme.dart';
 import '../utils/api_parse.dart';
-import '../services/background_removal_service.dart';
 import '../widgets/product_image_file.dart';
 import 'barcode_scanner_screen.dart';
 
@@ -39,9 +37,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   List<Map<String, dynamic>> _types = [];
   int? _selectedTypeId;
 
-  /// Path to the product image (after optional white-background removal). Mobile only.
+  /// Path to the picked product image (camera or gallery).
   String? _productImagePath;
-  bool _imageProcessing = false;
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -173,12 +170,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               ListTile(
                 leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
                 title: const Text('الكاميرا'),
-                onTap: () { Navigator.pop(ctx); _pickAndProcessImage(ImageSource.camera); },
+                onTap: () { Navigator.pop(ctx); _pickImage(ImageSource.camera); },
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
                 title: const Text('المعرض'),
-                onTap: () { Navigator.pop(ctx); _pickAndProcessImage(ImageSource.gallery); },
+                onTap: () { Navigator.pop(ctx); _pickImage(ImageSource.gallery); },
               ),
             ],
           ),
@@ -187,7 +184,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
-  Future<void> _pickAndProcessImage(ImageSource source) async {
+  Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? xFile = await _imagePicker.pickImage(
         source: source,
@@ -195,49 +192,20 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         imageQuality: 90,
       );
       if (xFile == null || !mounted) return;
-
-      setState(() => _imageProcessing = true);
-
-      String resultPath = xFile.path;
-
-      if (kIsWeb) {
-        if (mounted) {
-          setState(() => _imageProcessing = false);
-          _showImageError('إزالة الخلفية متاحة في تطبيق Android و iOS فقط');
-        }
-        return;
-      }
-
-      try {
-        resultPath = await BackgroundRemovalService.removeBackgroundAndSaveToTemp(xFile.path);
-      } on BackgroundRemovalException catch (e) {
-        if (mounted) _showImageError(e.message);
-        setState(() => _imageProcessing = false);
-        return;
-      }
-
-      if (mounted) setState(() {
-        _productImagePath = resultPath;
-        _imageProcessing = false;
-      });
+      setState(() => _productImagePath = xFile.path);
     } catch (e) {
       if (mounted) {
-        _showImageError('تعذر فتح الكاميرا أو المعرض');
-        setState(() => _imageProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('تعذر فتح الكاميرا أو المعرض'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
       }
     }
-  }
-
-  void _showImageError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 
   @override
@@ -341,30 +309,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             ],
           ),
         ),
-            if (_imageProcessing)
-              Container(
-                color: Colors.black54,
-                child: const Center(
-                  child: Card(
-                    margin: EdgeInsets.all(32),
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.primary),
-                          ),
-                          SizedBox(height: 16),
-                          Text('جاري إزالة الخلفية...', style: TextStyle(fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
     );
@@ -394,7 +338,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           ),
           const SizedBox(height: 14),
           GestureDetector(
-            onTap: _imageProcessing ? null : _showImageSourceSheet,
+            onTap: _showImageSourceSheet,
             child: Container(
               height: 180,
               decoration: BoxDecoration(
@@ -412,7 +356,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           Icon(Icons.add_photo_alternate_outlined, size: 48, color: AppColors.textTertiary),
                           const SizedBox(height: 8),
                           Text(
-                            'اضغط لتحميل صورة مع خلفية بيضاء',
+                            'اضغط لتحميل صورة',
                             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                           ),
                         ],
@@ -424,7 +368,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           SizedBox(
             height: 44,
             child: OutlinedButton.icon(
-              onPressed: _imageProcessing ? null : _showImageSourceSheet,
+              onPressed: _showImageSourceSheet,
               icon: const Icon(Icons.upload_rounded, size: 20),
               label: const Text('تحميل صورة'),
               style: OutlinedButton.styleFrom(

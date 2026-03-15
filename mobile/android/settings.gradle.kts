@@ -1,3 +1,14 @@
+// Patch plugins in pub cache for AGP 8+ (run before projects load)
+val pubCache = System.getenv("PUB_CACHE")
+    ?: (System.getenv("LOCALAPPDATA")?.let { "$it/Pub/Cache" } ?: (System.getProperty("user.home")!! + "/.pub-cache"))
+val pubCacheDir = java.io.File(pubCache)
+// blue_thermal_printer: add namespace for AGP 8+
+val blueThermal = java.io.File(pubCacheDir, "hosted/pub.dev/blue_thermal_printer-1.2.3/android/build.gradle")
+if (blueThermal.exists()) {
+    val t = blueThermal.readText()
+    if (!t.contains("namespace")) blueThermal.writeText(t.replace("android {", "android {\n    namespace 'id.kakzaki.blue_thermal_printer'"))
+}
+
 pluginManagement {
     val flutterSdkPath =
         run {
